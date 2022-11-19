@@ -286,6 +286,14 @@
 #define RC1_SetDigitalInput()   do { TRISCbits.TRISC1 = 1; } while(0)
 #define RC1_SetDigitalOutput()  do { TRISCbits.TRISC1 = 0; } while(0)
 
+// get/set RC2 procedures
+#define RC2_SetHigh()    do { LATCbits.LATC2 = 1; } while(0)
+#define RC2_SetLow()   do { LATCbits.LATC2 = 0; } while(0)
+#define RC2_Toggle()   do { LATCbits.LATC2 = ~LATCbits.LATC2; } while(0)
+#define RC2_GetValue()         PORTCbits.RC2
+#define RC2_SetDigitalInput()   do { TRISCbits.TRISC2 = 1; } while(0)
+#define RC2_SetDigitalOutput()  do { TRISCbits.TRISC2 = 0; } while(0)
+
 // get/set channel_AN14 aliases
 #define channel_AN14_TRIS               TRISCbits.TRISC2
 #define channel_AN14_LAT                LATCbits.LATC2

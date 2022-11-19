@@ -10,6 +10,8 @@
       <itemPath>utility.h</itemPath>
       <itemPath>types.h</itemPath>
       <itemPath>main.h</itemPath>
+      <itemPath>si241.h</itemPath>
+      <itemPath>spi1.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -23,6 +25,8 @@
       <itemPath>mcc.c</itemPath>
       <itemPath>pin_manager.c</itemPath>
       <itemPath>utility.c</itemPath>
+      <itemPath>si241.c</itemPath>
+      <itemPath>spi1.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -32,6 +36,8 @@
       <itemPath>docs/L6924D.pdf</itemPath>
       <itemPath>docs/2N7002DW.pdf</itemPath>
       <itemPath>docs/lmv321L.pdf</itemPath>
+      <itemPath>Micro_RF.mc3</itemPath>
+      <itemPath>Si24R1 datasheet V1.pdf</itemPath>
     </logicalFolder>
   </logicalFolder>
   <sourceRootList>
@@ -63,7 +69,7 @@
         <archiverTool>
         </archiverTool>
         <loading>
-          <loadableFile>../../NEW_PIC_BOOT_MICRO/pic18f45k50.X/dist/PIC18F45K50_XC8/production/pic18f45k50.X.production.hex</loadableFile>
+          <loadableFile>/Users/edhorton/MPLABXProjects/NEW_PIC_BOOT_MICRO_RF/pic18f45k50.X/dist/PIC18F45K50_XC8/production/pic18f45k50.X.production.hex</loadableFile>
           <useAlternateLoadableFile>false</useAlternateLoadableFile>
           <parseOnProdLoad>false</parseOnProdLoad>
           <alternateLoadableFile></alternateLoadableFile>
@@ -216,6 +222,7 @@
                   value="Press to browse for a specific firmware version"/>
         <property key="ToolFirmwareOption.UseLatestFirmware" value="true"/>
         <property key="debugoptions.useswbreakpoints" value="false"/>
+        <property key="firmware.download.all" value="false"/>
         <property key="hwtoolclock.frcindebug" value="false"/>
         <property key="hwtoolclock.instructionspeed" value="4"/>
         <property key="hwtoolclock.units" value="mips"/>

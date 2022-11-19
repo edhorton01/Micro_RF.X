@@ -20,7 +20,7 @@ void PIN_MANAGER_Initialize(void)
     TRISE = 0x03;
     TRISD = 0x00; // all outputs
     TRISC = 0x03; // RC0, RC1 Input
-    TRISB = 0xF5; // RB7, RB6, RB5, RB4, RB2, RB0 inputs
+    TRISB = 0xF1; // RB7, RB6, RB5, RB4, RB0 inputs
     TRISA = 0x03; // RA0, RA1 analog inputs
     /**
     ANSELx registers
@@ -36,11 +36,6 @@ void PIN_MANAGER_Initialize(void)
     IO_RB6_SetPullup();
     IO_RB7_SetPullup();
     INTCON2bits.nRBPU = 0;
-}
-
-void PIN_MANAGER_IOC(void)
-{
-
 }
 
 /**

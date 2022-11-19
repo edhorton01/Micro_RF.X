@@ -15,6 +15,7 @@ extern "C" {
     void ServiceKeyPress(void);
     void init_button(uint8_t button, uint8_t pos);
     void ServiceCmd(void);
+    void ServiceRFCmd(void);
     void RestoreNavDim(void);
     void ServiceLEDs(uint8_t pos);
     void ServiceTopLED(uint8_t pos);
@@ -24,6 +25,9 @@ extern "C" {
     void ReadBattery(void);
     void EEPROM_Write(uint8_t address, uint8_t data);
     uint8_t EEPROM_Read(uint8_t address);
+    uint8_t ReadFlash(uint32_t addr);
+    void writeUserID(uint8_t *flashWrBufPtr);
+
 
 #ifdef	__cplusplus
 }

@@ -2,13 +2,15 @@
 #include "utility.h"
 #include "main.h"
 #include "types.h"
-
+#include "pin_manager.h"
+#include "si241.h"
 
 extern KEYstateBITS KeyStatus;
 extern LEDControl LEDState[2];
 extern uint8_t TurnOff;
 extern uint8_t TurnOffBlink;
 extern DIMstateBITS DimB;
+extern volatile TmrDelay TimerD;
 
 /**
   Section: ADC Module APIs
@@ -60,6 +62,7 @@ adc_result_t ADC_GetConversionResult(void)
     return ((ADRESH << 8) + ADRESL);
 }
 
+/*
 adc_result_t ADC_GetConversion(adc_channel_t channel)
 {
     // select the A/D channel
@@ -79,7 +82,7 @@ adc_result_t ADC_GetConversion(adc_channel_t channel)
     return ((ADRESH << 8) + ADRESL);
 
 }
-
+ */
 void ADC_ISR(void)
 {
     // Clear the ADC interrupt flag
@@ -157,7 +160,7 @@ void DAC_SetOutput(uint8_t inputData)
 /**
   Section: PWM Module APIs
  */
-
+/*
 void PWM2_Initialize(void)
 {
     // Set the PWM to the options selected in the MPLAB(c) Code Configurator
@@ -182,7 +185,6 @@ void PWM2_LoadDutyValue(uint16_t dutyValue)
     CCP2CON = (uint8_t) ((CCP2CON & 0xCF) | ((dutyValue & 0x0003) << 4));
 }
 
-/**
   Section: Global Variables Definitions
  */
 
@@ -236,6 +238,7 @@ void TMR0_StopTimer(void)
     T0CONbits.TMR0ON = 0;
 }
 
+/*
 uint16_t TMR0_ReadTimer(void)
 {
     uint16_t readVal;
@@ -262,10 +265,10 @@ void TMR0_Reload(void)
     TMR0H = timer0ReloadVal >> 8;
     TMR0L = (uint8_t) timer0ReloadVal;
 }
-
+ */
 void TMR0_ISR(void)
 {
-    LATCbits.LATC2 = 1;
+    //    RC2_Toggle();     // Test PointRC2_
     // clear the TMR0 interrupt flag
     INTCONbits.TMR0IF = 0;
 
@@ -274,13 +277,18 @@ void TMR0_ISR(void)
     //    TMR0H =  (uint8_t) 0xF2;
     TMR0H = timer0ReloadVal >> 8;
     TMR0L = (uint8_t) timer0ReloadVal;
-    LATCbits.LATC2 = 0;
+
     timer0Cycle++;
     //    if (!(timer0Cycle & 0x01))
     //    {
     SendLEDs();
     //    }
+    TimerD._window = 1;
     ServiceKeyPress();
+    if (TimerD._RF_Active)
+    {
+        SI241_PwrOn();
+    }
 }
 
 void (*TMR1_InterruptHandler)(void);
@@ -339,8 +347,14 @@ void TMR1_ISR(void)
     {
         //	TRISB = TRISB & 0b11111001;
         //	TRISD = TRISD & 0b01100110;
-
-        TRISB = TRISB & 0b11111000;
+        if (TimerD._RF_Active)
+        {
+            TRISB = TRISB & 0b11111101;
+        }
+        else
+        {
+            TRISB = TRISB & 0b11111000;
+        }
         TRISD = TRISD & 0b01110011;
     }
 }

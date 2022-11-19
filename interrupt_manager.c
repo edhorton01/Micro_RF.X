@@ -15,12 +15,12 @@
     For individual peripheral handlers please see the peripheral driver for
     all modules selected in the GUI.
     Generation Information :
-	Product Revision  :  MPLAB(c) Code Configurator - 4.15
-	Device            :  PIC18F45K50
-	Driver Version    :  1.02
+        Product Revision  :  MPLAB(c) Code Configurator - 4.15
+        Device            :  PIC18F45K50
+        Driver Version    :  1.02
     The generated drivers are tested against the following:
-	Compiler          :  XC8 1.35
-	MPLAB             :  MPLAB X 3.40
+        Compiler          :  XC8 1.35
+        MPLAB             :  MPLAB X 3.40
  */
 
 /*
@@ -47,6 +47,8 @@
 
 #include "interrupt_manager.h"
 #include "mcc.h"
+#include "spi1.h"
+#include "si241.h"
 
 void INTERRUPT_Initialize(void)
 {
@@ -54,33 +56,54 @@ void INTERRUPT_Initialize(void)
     RCONbits.IPEN = 0;
 }
 
-void interrupt INTERRUPT_InterruptManager(void)
+void INTERRUPT_DoIt(void)
 {
-    // interrupt handler
     if (INTCONbits.TMR0IE == 1 && INTCONbits.TMR0IF == 1)
     {
-	TMR0_ISR();
-    }
-    else if (INTCONbits.PEIE == 1 && PIE1bits.ADIE == 1 && PIR1bits.ADIF == 1)
-    {
-	ADC_ISR();
+        TMR0_ISR();
     }
     else if (INTCONbits.IOCIE == 1 && INTCONbits.IOCIF == 1)
     {
-	IOC_ISR();
+        IOC_ISR();
     }
     else if (PIE1bits.TMR1IE == 1 && PIR1bits.TMR1IF == 1)
     {
-	TMR1_ISR();
+        TMR1_ISR();
     }
     else if (PIE2bits.TMR3IE == 1 && PIR2bits.TMR3IF == 1)
     {
-	TMR3_ISR();
+        TMR3_ISR();
+    }
+    else if (INTCON3bits.INT2IF == 1 && INTCON3bits.INT2IE == 1)
+    {
+        SI241_Interrupt();
+    }
+    else if (INTCONbits.PEIE == 1)
+    {
+        if (PIE1bits.ADIE == 1 && PIR1bits.ADIF == 1)
+        {
+            ADC_ISR();
+        }
+        else if (PIE2bits.BCL1IE == 1 && PIR2bits.BCL1IF == 1)
+        {
+            MSSP1_InterruptHandler();
+        }
+        else if (PIE1bits.SSP1IE == 1 && PIR1bits.SSP1IF == 1)
+        {
+            MSSP1_InterruptHandler();
+        }
     }
     else
     {
-	//Unhandled Interrupt
+        //Unhandled Interrupt
     }
+
+}
+
+void interrupt INTERRUPT_InterruptManager(void)
+{
+    // interrupt handler
+    INTERRUPT_DoIt();
 }
 /**
  End of File

@@ -57,17 +57,17 @@ OBJECTDIR=build/${CND_CONF}/${IMAGE_TYPE}
 DISTDIR=dist/${CND_CONF}/${IMAGE_TYPE}
 
 # Source Files Quoted if spaced
-SOURCEFILES_QUOTED_IF_SPACED=main.c interrupt_manager.c mcc.c pin_manager.c utility.c
+SOURCEFILES_QUOTED_IF_SPACED=main.c interrupt_manager.c mcc.c pin_manager.c utility.c si241.c spi1.c
 
 # Object Files Quoted if spaced
-OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/main.p1 ${OBJECTDIR}/interrupt_manager.p1 ${OBJECTDIR}/mcc.p1 ${OBJECTDIR}/pin_manager.p1 ${OBJECTDIR}/utility.p1
-POSSIBLE_DEPFILES=${OBJECTDIR}/main.p1.d ${OBJECTDIR}/interrupt_manager.p1.d ${OBJECTDIR}/mcc.p1.d ${OBJECTDIR}/pin_manager.p1.d ${OBJECTDIR}/utility.p1.d
+OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/main.p1 ${OBJECTDIR}/interrupt_manager.p1 ${OBJECTDIR}/mcc.p1 ${OBJECTDIR}/pin_manager.p1 ${OBJECTDIR}/utility.p1 ${OBJECTDIR}/si241.p1 ${OBJECTDIR}/spi1.p1
+POSSIBLE_DEPFILES=${OBJECTDIR}/main.p1.d ${OBJECTDIR}/interrupt_manager.p1.d ${OBJECTDIR}/mcc.p1.d ${OBJECTDIR}/pin_manager.p1.d ${OBJECTDIR}/utility.p1.d ${OBJECTDIR}/si241.p1.d ${OBJECTDIR}/spi1.p1.d
 
 # Object Files
-OBJECTFILES=${OBJECTDIR}/main.p1 ${OBJECTDIR}/interrupt_manager.p1 ${OBJECTDIR}/mcc.p1 ${OBJECTDIR}/pin_manager.p1 ${OBJECTDIR}/utility.p1
+OBJECTFILES=${OBJECTDIR}/main.p1 ${OBJECTDIR}/interrupt_manager.p1 ${OBJECTDIR}/mcc.p1 ${OBJECTDIR}/pin_manager.p1 ${OBJECTDIR}/utility.p1 ${OBJECTDIR}/si241.p1 ${OBJECTDIR}/spi1.p1
 
 # Source Files
-SOURCEFILES=main.c interrupt_manager.c mcc.c pin_manager.c utility.c
+SOURCEFILES=main.c interrupt_manager.c mcc.c pin_manager.c utility.c si241.c spi1.c
 
 
 
@@ -134,6 +134,22 @@ ${OBJECTDIR}/utility.p1: utility.c  nbproject/Makefile-${CND_CONF}.mk
 	@-${MV} ${OBJECTDIR}/utility.d ${OBJECTDIR}/utility.p1.d 
 	@${FIXDEPS} ${OBJECTDIR}/utility.p1.d $(SILENT) -rsi ${MP_CC_DIR}../  
 	
+${OBJECTDIR}/si241.p1: si241.c  nbproject/Makefile-${CND_CONF}.mk 
+	@${MKDIR} "${OBJECTDIR}" 
+	@${RM} ${OBJECTDIR}/si241.p1.d 
+	@${RM} ${OBJECTDIR}/si241.p1 
+	${MP_CC} --pass1 $(MP_EXTRA_CC_PRE) --chip=$(MP_PROCESSOR_OPTION) -Q -G  -D__DEBUG=1  --debugger=realice    --double=32 --float=32 --emi=wordwrite --rom=default,-0-FFF,-1006-1007,-1016-1017 --opt=+asm,+asmfile,-speed,+space,-debug --addrqual=request --mode=free -P -N255 --warn=-3 --asmlist -DXPRJ_default=$(CND_CONF)  --summary=default,-psect,-class,+mem,-hex,-file --codeoffset=0x1000 --output=default,-inhx032 --runtime=default,+clear,+init,-keep,-no_startup,-download,+config,+clib,-plib $(COMPARISON_BUILD)  --output=-mcof,+elf:multilocs --stack=compiled:auto:auto:auto "--errformat=%f:%l: error: (%n) %s" "--warnformat=%f:%l: warning: (%n) %s" "--msgformat=%f:%l: advisory: (%n) %s"     -o${OBJECTDIR}/si241.p1 si241.c 
+	@-${MV} ${OBJECTDIR}/si241.d ${OBJECTDIR}/si241.p1.d 
+	@${FIXDEPS} ${OBJECTDIR}/si241.p1.d $(SILENT) -rsi ${MP_CC_DIR}../  
+	
+${OBJECTDIR}/spi1.p1: spi1.c  nbproject/Makefile-${CND_CONF}.mk 
+	@${MKDIR} "${OBJECTDIR}" 
+	@${RM} ${OBJECTDIR}/spi1.p1.d 
+	@${RM} ${OBJECTDIR}/spi1.p1 
+	${MP_CC} --pass1 $(MP_EXTRA_CC_PRE) --chip=$(MP_PROCESSOR_OPTION) -Q -G  -D__DEBUG=1  --debugger=realice    --double=32 --float=32 --emi=wordwrite --rom=default,-0-FFF,-1006-1007,-1016-1017 --opt=+asm,+asmfile,-speed,+space,-debug --addrqual=request --mode=free -P -N255 --warn=-3 --asmlist -DXPRJ_default=$(CND_CONF)  --summary=default,-psect,-class,+mem,-hex,-file --codeoffset=0x1000 --output=default,-inhx032 --runtime=default,+clear,+init,-keep,-no_startup,-download,+config,+clib,-plib $(COMPARISON_BUILD)  --output=-mcof,+elf:multilocs --stack=compiled:auto:auto:auto "--errformat=%f:%l: error: (%n) %s" "--warnformat=%f:%l: warning: (%n) %s" "--msgformat=%f:%l: advisory: (%n) %s"     -o${OBJECTDIR}/spi1.p1 spi1.c 
+	@-${MV} ${OBJECTDIR}/spi1.d ${OBJECTDIR}/spi1.p1.d 
+	@${FIXDEPS} ${OBJECTDIR}/spi1.p1.d $(SILENT) -rsi ${MP_CC_DIR}../  
+	
 else
 ${OBJECTDIR}/main.p1: main.c  nbproject/Makefile-${CND_CONF}.mk 
 	@${MKDIR} "${OBJECTDIR}" 
@@ -175,6 +191,22 @@ ${OBJECTDIR}/utility.p1: utility.c  nbproject/Makefile-${CND_CONF}.mk
 	@-${MV} ${OBJECTDIR}/utility.d ${OBJECTDIR}/utility.p1.d 
 	@${FIXDEPS} ${OBJECTDIR}/utility.p1.d $(SILENT) -rsi ${MP_CC_DIR}../  
 	
+${OBJECTDIR}/si241.p1: si241.c  nbproject/Makefile-${CND_CONF}.mk 
+	@${MKDIR} "${OBJECTDIR}" 
+	@${RM} ${OBJECTDIR}/si241.p1.d 
+	@${RM} ${OBJECTDIR}/si241.p1 
+	${MP_CC} --pass1 $(MP_EXTRA_CC_PRE) --chip=$(MP_PROCESSOR_OPTION) -Q -G    --double=32 --float=32 --emi=wordwrite --rom=default,-0-FFF,-1006-1007,-1016-1017 --opt=+asm,+asmfile,-speed,+space,-debug --addrqual=request --mode=free -P -N255 --warn=-3 --asmlist -DXPRJ_default=$(CND_CONF)  --summary=default,-psect,-class,+mem,-hex,-file --codeoffset=0x1000 --output=default,-inhx032 --runtime=default,+clear,+init,-keep,-no_startup,-download,+config,+clib,-plib $(COMPARISON_BUILD)  --output=-mcof,+elf:multilocs --stack=compiled:auto:auto:auto "--errformat=%f:%l: error: (%n) %s" "--warnformat=%f:%l: warning: (%n) %s" "--msgformat=%f:%l: advisory: (%n) %s"     -o${OBJECTDIR}/si241.p1 si241.c 
+	@-${MV} ${OBJECTDIR}/si241.d ${OBJECTDIR}/si241.p1.d 
+	@${FIXDEPS} ${OBJECTDIR}/si241.p1.d $(SILENT) -rsi ${MP_CC_DIR}../  
+	
+${OBJECTDIR}/spi1.p1: spi1.c  nbproject/Makefile-${CND_CONF}.mk 
+	@${MKDIR} "${OBJECTDIR}" 
+	@${RM} ${OBJECTDIR}/spi1.p1.d 
+	@${RM} ${OBJECTDIR}/spi1.p1 
+	${MP_CC} --pass1 $(MP_EXTRA_CC_PRE) --chip=$(MP_PROCESSOR_OPTION) -Q -G    --double=32 --float=32 --emi=wordwrite --rom=default,-0-FFF,-1006-1007,-1016-1017 --opt=+asm,+asmfile,-speed,+space,-debug --addrqual=request --mode=free -P -N255 --warn=-3 --asmlist -DXPRJ_default=$(CND_CONF)  --summary=default,-psect,-class,+mem,-hex,-file --codeoffset=0x1000 --output=default,-inhx032 --runtime=default,+clear,+init,-keep,-no_startup,-download,+config,+clib,-plib $(COMPARISON_BUILD)  --output=-mcof,+elf:multilocs --stack=compiled:auto:auto:auto "--errformat=%f:%l: error: (%n) %s" "--warnformat=%f:%l: warning: (%n) %s" "--msgformat=%f:%l: advisory: (%n) %s"     -o${OBJECTDIR}/spi1.p1 spi1.c 
+	@-${MV} ${OBJECTDIR}/spi1.d ${OBJECTDIR}/spi1.p1.d 
+	@${FIXDEPS} ${OBJECTDIR}/spi1.p1.d $(SILENT) -rsi ${MP_CC_DIR}../  
+	
 endif
 
 # ------------------------------------------------------------------------------------
@@ -192,12 +224,12 @@ dist/${CND_CONF}/${IMAGE_TYPE}/Micro_RF.X.${IMAGE_TYPE}.${OUTPUT_SUFFIX}: ${OBJE
 	@${RM} dist/${CND_CONF}/${IMAGE_TYPE}/Micro_RF.X.${IMAGE_TYPE}.hex 
 	
 else
-dist/${CND_CONF}/${IMAGE_TYPE}/Micro_RF.X.${IMAGE_TYPE}.${OUTPUT_SUFFIX}: ${OBJECTFILES}  nbproject/Makefile-${CND_CONF}.mk    ../../NEW_PIC_BOOT_MICRO/pic18f45k50.X/dist/PIC18F45K50_XC8/production/pic18f45k50.X.production.hex
+dist/${CND_CONF}/${IMAGE_TYPE}/Micro_RF.X.${IMAGE_TYPE}.${OUTPUT_SUFFIX}: ${OBJECTFILES}  nbproject/Makefile-${CND_CONF}.mk    /Users/edhorton/MPLABXProjects/NEW_PIC_BOOT_MICRO_RF/pic18f45k50.X/dist/PIC18F45K50_XC8/production/pic18f45k50.X.production.hex
 	@${MKDIR} dist/${CND_CONF}/${IMAGE_TYPE} 
 	${MP_CC} $(MP_EXTRA_LD_PRE) --chip=$(MP_PROCESSOR_OPTION) -G -mdist/${CND_CONF}/${IMAGE_TYPE}/Micro_RF.X.${IMAGE_TYPE}.map  -DXPRJ_default=$(CND_CONF)    --double=32 --float=32 --emi=wordwrite --rom=default,-0-FFF,-1006-1007,-1016-1017 --opt=+asm,+asmfile,-speed,+space,-debug --addrqual=request --mode=free -P -N255 --warn=-3 --asmlist --summary=default,-psect,-class,+mem,-hex,-file --codeoffset=0x1000 --output=default,-inhx032 --runtime=default,+clear,+init,-keep,-no_startup,-download,+config,+clib,-plib --output=-mcof,+elf:multilocs --stack=compiled:auto:auto:auto "--errformat=%f:%l: error: (%n) %s" "--warnformat=%f:%l: warning: (%n) %s" "--msgformat=%f:%l: advisory: (%n) %s"     $(COMPARISON_BUILD) --memorysummary dist/${CND_CONF}/${IMAGE_TYPE}/memoryfile.xml -odist/${CND_CONF}/${IMAGE_TYPE}/Micro_RF.X.${IMAGE_TYPE}.${DEBUGGABLE_SUFFIX}  ${OBJECTFILES_QUOTED_IF_SPACED}     
 	
 	@echo "Creating unified hex file"
-	@"/Applications/microchip/mplabx/v5.50/mplab_platform/platform/../mplab_ide/modules/../../bin/hexmate" --edf="/Applications/microchip/mplabx/v5.50/mplab_platform/platform/../mplab_ide/modules/../../dat/en_msgs.txt" dist/${CND_CONF}/${IMAGE_TYPE}/Micro_RF.X.${IMAGE_TYPE}.hex ../../NEW_PIC_BOOT_MICRO/pic18f45k50.X/dist/PIC18F45K50_XC8/production/pic18f45k50.X.production.hex -odist/${CND_CONF}/production/Micro_RF.X.production.unified.hex
+	@"/Applications/microchip/mplabx/v5.50/mplab_platform/platform/../mplab_ide/modules/../../bin/hexmate" --edf="/Applications/microchip/mplabx/v5.50/mplab_platform/platform/../mplab_ide/modules/../../dat/en_msgs.txt" dist/${CND_CONF}/${IMAGE_TYPE}/Micro_RF.X.${IMAGE_TYPE}.hex /Users/edhorton/MPLABXProjects/NEW_PIC_BOOT_MICRO_RF/pic18f45k50.X/dist/PIC18F45K50_XC8/production/pic18f45k50.X.production.hex -odist/${CND_CONF}/production/Micro_RF.X.production.unified.hex
 
 endif
 

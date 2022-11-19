@@ -73,6 +73,21 @@ extern "C" {
     } KEYstateControl;
 
     typedef struct {
+        uint8_t _RF_cmd;
+
+        union {
+
+            struct {
+                uint8_t _int;
+            };
+
+            struct {
+                unsigned _new_cmd : 1;
+            };
+        };
+    } RF_Cmd;
+
+    typedef struct {
         uint8_t _button;
         uint8_t _button_press;
         uint8_t _sequence_len;
@@ -154,6 +169,30 @@ extern "C" {
             };
         };
     } DoubleTap;
+
+    typedef struct {
+        uint8_t _delaycnt;
+        uint8_t _delaytarget;
+        uint8_t _statuscnt;
+
+        union {
+
+            struct {
+                uint8_t _flags;
+            };
+
+            struct {
+                unsigned _RF_Active : 1;
+                unsigned _active : 1;
+                unsigned _finished : 1;
+                unsigned _prime_rx : 1;
+                unsigned _window : 1;
+                unsigned _new_rx : 1;
+
+            };
+        };
+    } TmrDelay;
+
 
 #ifdef	__cplusplus
 }
