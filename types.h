@@ -83,6 +83,8 @@ extern "C" {
 
             struct {
                 unsigned _new_cmd : 1;
+                unsigned _pair_mode : 1;
+                unsigned _pair_active : 1;
             };
         };
     } RF_Cmd;

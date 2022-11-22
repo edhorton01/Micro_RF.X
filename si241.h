@@ -39,6 +39,7 @@
 #define W_TX_PAYLOAD_NOACK   0xB0
 
 #define Payload_len     0x02
+#define Payload_len_pair     0x07
 
 void SI241_PwrOn(void);
 void SI241_PwrOff(void);
@@ -52,6 +53,7 @@ void SI241_LoadRxAddress(void);
 void SI241_SetStandby(void);
 void SI241_RX0_Payload(uint8_t rx_bc);
 void SI241_RX0_ClearInt(void);
+void SI241_SaveRxAddress(void);
 
 uint8_t SI241_Status(void);
 uint8_t SI241_RX0_BC(void);

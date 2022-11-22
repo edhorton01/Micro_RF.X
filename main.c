@@ -52,6 +52,11 @@ uint8_t TurnOff;
 uint8_t TurnOffCnt;
 uint8_t TurnOffBlink;
 
+uint8_t PgmChangeCnt;
+uint8_t PgmStat;
+uint16_t PgmStatCnt;
+uint8_t PgmStatDwell;
+
 uint8_t MaybeOff;
 uint8_t Charge;
 uint8_t NeedCal;
@@ -878,6 +883,7 @@ void main(void)
     BOOT_hold_trip = 0;
     HighRange = 0;
     DoBattery = 0;
+    rf_action._int = 0;
 
     INTCONbits.GIE = 1;
     INTCONbits.PEIE = 1;
@@ -1015,6 +1021,18 @@ void main(void)
             KeyStatus._interrupt = 0;
             if (!TurnOff)
             {
+                if (PgmStat == 0x81)
+                {
+                    notify_test = 400;
+                    PgmStatCnt++;
+                    if (PgmStatCnt >= notify_test)
+                    {
+                        PgmStatCnt = 0;
+                        PgmStatDwell = 0;
+                        IO_RE2_SetHigh();
+                        NotifyState = 1;
+                    }
+                }
 #ifdef ALLIR_VER
                 NotifyCnt++;
                 notify_test = 0;
@@ -1088,6 +1106,13 @@ void main(void)
         if (TimerD._RF_Active && TimerD._finished && !TimerD._active && !TimerD._prime_rx)
         {
             TimerD._prime_rx = 1;
+            if (rf_action._pair_mode)
+            {
+                rf_action._pair_active = 1;
+            }
+            Nop();
+            Nop();
+            Nop();
             SI241_SetupRx();
             TimerD._statuscnt = 0;
             SI241_SetRx();
@@ -1108,12 +1133,33 @@ void main(void)
                     rf_action._RF_cmd = RX_Payload[0];
                     rf_action._new_cmd = 1;
                 }
+                rx_rssi = SI241_RSSI();
+                Nop();
+                Nop();
+                Nop();
+                SI241_RX0_ClearInt();
             }
-            rx_rssi = SI241_RSSI();
-            Nop();
-            Nop();
-            Nop();
-            SI241_RX0_ClearInt();
+            else if (rx_bc == 7)
+            {
+                RX_Payload[1] = ~RX_Payload[1];
+                if (RX_Payload[0] == RX_Payload[1])
+                {
+                    SI241_SaveRxAddress();
+                    LEDState[0]._active = 0;
+                    LEDState[1]._active = 0;
+                    RestoreNavDim();
+                    PgmStat = 0;
+                    SI241_PwrOff();
+
+                    TimerD._RF_Active = 1;
+                    SI241_PwrOn();
+                    rf_action._pair_mode = 0;
+                    rf_action._pair_active = 0;
+
+                    rf_action._RF_cmd = RX_Payload[0];
+                    rf_action._new_cmd = 1;
+                }
+            }
         }
         else if (TimerD._RF_Active && TimerD._finished && !TimerD._active && TimerD._prime_rx && TimerD._window)
         {
@@ -1129,15 +1175,18 @@ void main(void)
         ServiceRFCmd();
 
         OSCCONbits.SCS = 0; // PRI_IDLE
-        if (LEDState[0]._active || LEDState[1]._active || LEDState[2]._active)
+        if (LEDState[0]._active || LEDState[1]._active || LEDState[2]._active || (PgmStat == 0x81))
         {
-            OSCCONbits.IDLEN = 1;
-            OSCCONbits.IRCF = 0x07;
+            if (PgmStat != 0x81)
+            {
+                OSCCONbits.IDLEN = 1;
+                OSCCONbits.IRCF = 0x07;
+            }
             IO_RE2_SetHigh();
         }
         else
         {
-            if (!TurnOff)
+            if (!TurnOff && !PgmStat)
             {
                 clean_up();
             }
@@ -1344,7 +1393,30 @@ void ServiceKeyPress(void)
         {
             KeyStatus._pressed = 1;
             DimB._MaxOutWL = 0;
-            if (WL_hold == 0x80)
+            if (PgmStat == 0x80)
+            {
+                PgmStatCnt++;
+                if (PgmStatCnt >= 0x400)
+                {
+                    Nop();
+                    Nop();
+                    Nop();
+                    PgmStat = 0x81;
+                    PgmStatCnt = 400;
+                    PgmStatDwell = 0;
+                    LEDState[0]._active = 0;
+                    LEDState[1]._active = 0;
+                    RestoreNavDim();
+                    SI241_PwrOff();
+
+                    TimerD._RF_Active = 1;
+                    SI241_PwrOn();
+                    rf_action._pair_mode = 1;
+                    rf_action._pair_active = 0;
+                }
+            }
+
+            else if (WL_hold == 0x80)
             {
 #ifndef NO_WL_HOLD
                 WL_hold_cnt++;
@@ -2127,6 +2199,24 @@ void ServiceCmd(void)
             break;
         }
 
+        case 0xE8:
+        {
+            PgmStat = 0x80;
+            PgmStatCnt = 0;
+            LEDState[0]._active = 0;
+            LEDState[1]._active = 0;
+            if (TimerD._RF_Active)
+            {
+                TRISB = 0xf5; // lower outputs except MISO, INT
+            }
+            else
+            {
+                TRISB = 0xf0; // lower outputs
+            }
+            TRISD = 0x00; // all outputs
+            break;
+        }
+
         case 0xf8:
         {
             if (!DimB._German_IR)
@@ -2148,7 +2238,7 @@ void ServiceCmd(void)
                     LEDState[0]._active = 0;
                     LEDState[1]._active = 0;
                 }
-                else
+                else if (PgmStat != 0x81)
                 {
                     if (!Double_Tap._rear_dt_inprog)
                     {
@@ -2209,6 +2299,7 @@ void ServiceCmd(void)
         }
         case 0xdc:
         {
+            PgmStat = 0;
             if (!DimB._German_IR)
             {
                 DimB._IR_Mode = 0;
@@ -2286,6 +2377,7 @@ void ServiceCmd(void)
         }
         case 0x7c:
         {
+            PgmStat = 0;
             DimB._IR_Mode = 0;
             DimB._Cust_Mode = 0;
             DimB._SOS_Mode = 0;
@@ -2429,6 +2521,7 @@ void ServiceCmd(void)
 
         case 0xbc:
         {
+            PgmStat = 0;
             BRT_hold = 0x80;
             BRT_hold_cnt = 0;
             if ((LEDState[0]._active != 0) || (LEDState[1]._active != 0))
@@ -2520,7 +2613,7 @@ void ServiceCmd(void)
                     LEDState[0]._active = 0;
                     LEDState[1]._active = 0;
                 }
-                else
+                else if (PgmStat != 0x81)
                 {
                     WL_hold = 0x80;
                     WL_hold_cnt = 0;
@@ -2560,6 +2653,7 @@ void ServiceCmd(void)
 
         case 0xf4:
         {
+            PgmStat = 0;
             DimB._IR_Mode = 0;
             DimB._Cust_Mode = 0;
             if (DimB._SOS_Mode)
@@ -2960,6 +3054,19 @@ void ServiceLEDs(uint8_t pos)
     if (NotifyState)
     {
         TRISDbits.TRISD7 = 1;
+        if (PgmStat == 0x81)
+        {
+            PgmStatDwell++;
+            if (PgmStatDwell >= 5)
+            {
+                NotifyState = 0;
+                IO_RE2_SetLow();
+            }
+            else
+            {
+                IO_RE2_SetHigh();
+            }
+        }
     }
 }
 

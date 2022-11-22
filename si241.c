@@ -18,6 +18,9 @@ extern uint8_t RX_Address[6];
 extern uint8_t RX_Channel;
 extern uint16_t si24_on_timer;
 
+extern uint8_t Serial_buffer[8];
+extern RF_Cmd rf_action;
+
 extern volatile TmrDelay TimerD;
 extern volatile uint8_t Si24_Status;
 
@@ -100,58 +103,65 @@ void SI241_SetupRx(void)
 {
     SI241_LoadTxAddress();
     IO_RA3_SetLow(); // CSN low
-    SPI1_WriteBlock(&TX_Address, 6);
+    SPI1_WriteBlock(TX_Address, 6);
     IO_RA3_SetHigh(); // CSN high
 
     SI241_LoadRxAddress();
     IO_RA3_SetLow(); // CSN low
-    SPI1_WriteBlock(&RX_Address, 6);
+    SPI1_WriteBlock(RX_Address, 6);
     IO_RA3_SetHigh(); // CSN high
 
     SPI_Bout[0] = SETUP_AW;
     SPI_Bout[0] = SPI_Bout[0] | W_REGISTER;
     SPI_Bout[1] = 0x03;
     IO_RA3_SetLow(); // CSN low
-    SPI1_WriteBlock(&SPI_Bout, 2);
+    SPI1_WriteBlock(SPI_Bout, 2);
     IO_RA3_SetHigh(); // CSN high
 
     SPI_Bout[0] = EN_RXADDR;
     SPI_Bout[0] = SPI_Bout[0] | W_REGISTER;
     SPI_Bout[1] = 0x01;
     IO_RA3_SetLow(); // CSN low
-    SPI1_WriteBlock(&SPI_Bout, 2);
+    SPI1_WriteBlock(SPI_Bout, 2);
     IO_RA3_SetHigh(); // CSN high
 
     SPI_Bout[0] = RF_CH;
     SPI_Bout[0] = SPI_Bout[0] | W_REGISTER;
     SPI_Bout[1] = RX_Channel;
     IO_RA3_SetLow(); // CSN low
-    SPI1_WriteBlock(&SPI_Bout, 2);
+    SPI1_WriteBlock(SPI_Bout, 2);
     IO_RA3_SetHigh(); // CSN high
 
     SPI_Bout[0] = RX_PW_P0;
     SPI_Bout[0] = SPI_Bout[0] | W_REGISTER;
-    SPI_Bout[1] = Payload_len;
+    if (rf_action._pair_mode)
+    {
+        SPI_Bout[1] = Payload_len_pair;
+    }
+    else
+    {
+        SPI_Bout[1] = Payload_len;
+    }
     IO_RA3_SetLow(); // CSN low
-    SPI1_WriteBlock(&SPI_Bout, 2);
+    SPI1_WriteBlock(SPI_Bout, 2);
     IO_RA3_SetHigh(); // CSN high
 
     SPI_Bout[0] = RF_SETUP;
     SPI_Bout[0] = SPI_Bout[0] | W_REGISTER;
     SPI_Bout[1] = 0x08;
     IO_RA3_SetLow(); // CSN low
-    SPI1_WriteBlock(&SPI_Bout, 2);
+    SPI1_WriteBlock(SPI_Bout, 2);
     IO_RA3_SetHigh(); // CSN high
 
     SPI_Bout[0] = CONFIG;
     SPI_Bout[0] = SPI_Bout[0] | W_REGISTER;
     SPI_Bout[1] = 0x0F;
     IO_RA3_SetLow(); // CSN low
-    SPI1_WriteBlock(&SPI_Bout, 2);
+    SPI1_WriteBlock(SPI_Bout, 2);
     IO_RA3_SetHigh(); // CSN high
 
     IO_RA3_SetLow(); // CSN low
-    SPI1_ReadBlockCmd(&SPI_Bin, 5, 0x0a); // RX_ADDR_P0
+    SPI1_ReadBlockCmd(SPI_Bin, 5, 0x0a); // RX_ADDR_P0
     IO_RA3_SetHigh(); // CSN high
     Nop();
     Nop();
@@ -173,7 +183,7 @@ void SI241_SetStandby(void)
     SPI_Bout[0] = SPI_Bout[0] | W_REGISTER;
     SPI_Bout[1] = 0b01110000; // clear interrupt flags
     IO_RA3_SetLow(); // CSN low
-    SPI1_WriteBlock(&SPI_Bout, 2);
+    SPI1_WriteBlock(SPI_Bout, 2);
     IO_RA3_SetHigh(); // CSN high
 }
 
@@ -189,7 +199,7 @@ uint8_t SI241_Status(void)
 uint8_t SI241_RX0_BC(void)
 {
     IO_RA3_SetLow(); // CSN low
-    SPI1_ReadBlockCmd(&SPI_Bin, 1, 0x11);
+    SPI1_ReadBlockCmd(SPI_Bin, 1, 0x11);
     IO_RA3_SetHigh(); // CSN high
     return SPI_Bin[0];
 }
@@ -197,19 +207,26 @@ uint8_t SI241_RX0_BC(void)
 uint8_t SI241_RSSI(void)
 {
     IO_RA3_SetLow(); // CSN low
-    SPI1_ReadBlockCmd(&SPI_Bin, 1, 0x09);
+    SPI1_ReadBlockCmd(SPI_Bin, 1, 0x09);
     IO_RA3_SetHigh(); // CSN high
     return SPI_Bin[0];
 }
 
 void SI241_RX0_Payload(uint8_t rx_bc)
 {
-    if (rx_bc > Payload_len)
+    uint8_t test;
+
+    test = Payload_len;
+    if (rf_action._pair_mode)
     {
-        rx_bc = Payload_len;
+        test = Payload_len_pair;
+    }
+    if (rx_bc > test)
+    {
+        rx_bc = test;
     }
     IO_RA3_SetLow(); // CSN low
-    SPI1_ReadBlockCmd(&RX_Payload, rx_bc, 0x61); // R_RX_Payload
+    SPI1_ReadBlockCmd(RX_Payload, rx_bc, 0x61); // R_RX_Payload
     IO_RA3_SetHigh(); // CSN high
 }
 
@@ -229,66 +246,8 @@ void SI241_LoadRxAddress(void)
 
     RX_Address[0] = RX_ADDR_P0;
     RX_Address[0] = RX_Address[0] | W_REGISTER;
-    //    RX_Address[1] = 0x30;
-    //    RX_Address[2] = 0x4b;
-    //    RX_Address[3] = 0x4d;
-    //    RX_Address[4] = 0x50;
-    //    RX_Address[5] = 0x4f;
 
-    i = 0;
-    c1 = 0;
-    c2 = 0;
-    while (i < 6)
-    {
-        j = i + 8;
-        t1 = EEPROM_Read(i);
-        t2 = ~EEPROM_Read(j);
-        i++;
-        if (t1 == t2)
-        {
-            if (i != 6)
-            {
-                RX_Address[i] = t1;
-            }
-            else
-            {
-                RX_Channel = t1;
-            }
-        }
-        else
-        {
-            c1 = 1;
-            break;
-        }
-    }
-    if (c1)
-    {
-        i = 16;
-        while (i < 22)
-        {
-            j = i + 8;
-            t1 = EEPROM_Read(i);
-            t2 = ~EEPROM_Read(j);
-            i++;
-            if (t1 == t2)
-            {
-                if (i != 22)
-                {
-                    RX_Address[i - 16] = t1;
-                }
-                else
-                {
-                    RX_Channel = t1;
-                }
-            }
-            else
-            {
-                c2 = 1;
-                break;
-            }
-        }
-    }
-    if (c1 && c2)
+    if (rf_action._pair_mode)
     {
         RX_Address[1] = 0x01;
         RX_Address[2] = 0x00;
@@ -297,6 +256,72 @@ void SI241_LoadRxAddress(void)
         RX_Address[5] = 0x01;
         RX_Channel = 0x40;
     }
+
+    else
+    {
+        i = 0;
+        c1 = 0;
+        c2 = 0;
+        while (i < 6)
+        {
+            j = i + 8;
+            t1 = EEPROM_Read(i);
+            t2 = ~EEPROM_Read(j);
+            i++;
+            if (t1 == t2)
+            {
+                if (i != 6)
+                {
+                    RX_Address[i] = t1;
+                }
+                else
+                {
+                    RX_Channel = t1;
+                }
+            }
+            else
+            {
+                c1 = 1;
+                break;
+            }
+        }
+        if (c1)
+        {
+            i = 16;
+            while (i < 22)
+            {
+                j = i + 8;
+                t1 = EEPROM_Read(i);
+                t2 = ~EEPROM_Read(j);
+                i++;
+                if (t1 == t2)
+                {
+                    if (i != 22)
+                    {
+                        RX_Address[i - 16] = t1;
+                    }
+                    else
+                    {
+                        RX_Channel = t1;
+                    }
+                }
+                else
+                {
+                    c2 = 1;
+                    break;
+                }
+            }
+        }
+        if (c1 && c2)
+        {
+            RX_Address[1] = 0x01;
+            RX_Address[2] = 0x00;
+            RX_Address[3] = 0x00;
+            RX_Address[4] = 0x00;
+            RX_Address[5] = 0x01;
+            RX_Channel = 0x40;
+        }
+    }
 }
 
 void SI241_LoadTxAddress(void)
@@ -304,8 +329,40 @@ void SI241_LoadTxAddress(void)
     TX_Address[0] = TX_ADDR;
     TX_Address[0] = TX_Address[0] | W_REGISTER;
     TX_Address[1] = 0x00;
-    TX_Address[2] = 0x01;
-    TX_Address[3] = 0x01;
-    TX_Address[4] = 0x01;
-    TX_Address[5] = 0x00;
+    TX_Address[2] = ((Serial_buffer[0] << 4) & 0xf0) | (Serial_buffer[1] & 0x0f);
+    TX_Address[3] = ((Serial_buffer[2] << 4) & 0xf0) | (Serial_buffer[3] & 0x0f);
+    TX_Address[4] = ((Serial_buffer[4] << 4) & 0xf0) | (Serial_buffer[5] & 0x0f);
+    TX_Address[5] = ((Serial_buffer[6] << 4) & 0xf0) | (Serial_buffer[7] & 0x0f);
+}
+
+void SI241_SaveRxAddress(void)
+{
+    uint8_t i, j, k, t1, t2;
+
+    i = 0;
+    while (i < 8)
+    {
+        j = i + 8;
+        k = i + 2;
+        if (i < 5)
+        {
+            t1 = RX_Payload[k];
+        }
+        else if (i == 5)
+        {
+            t1 = 0x40;
+        }
+        else
+        {
+            t1 = 0xff;
+        }
+        t2 = ~t1;
+
+        EEPROM_Write(i, t1);
+        EEPROM_Write((i + 0x10), t1);
+
+        EEPROM_Write(j, t2);
+        EEPROM_Write((j + 0x10), t2);
+        i++;
+    }
 }
