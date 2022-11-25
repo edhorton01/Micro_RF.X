@@ -6,6 +6,7 @@
 #include "spi1.h"
 #include "main.h"
 
+#define	    REDGREEN 1
 
 extern uint8_t SPI_Bout[16];
 extern uint8_t SPI_Bin[16];
@@ -93,7 +94,14 @@ void SI241_PwrOff(void)
 void SI241_Interrupt(void)
 {
     INTCON3bits.INT2IF = 0;
-    TimerD._new_rx = 1;
+    if (Si24_Status == 0x80)
+    {
+        TimerD._new_rx = 1;
+    }
+    else if (Si24_Status == 0x40)
+    {
+        TimerD._new_tx = 1;
+    }
     Nop();
     Nop();
     Nop();
@@ -175,9 +183,110 @@ void SI241_SetRx(void)
     RA2_SetHigh(); // CE
 }
 
-void SI241_SetStandby(void)
+void SI241_SetuptxResp(void)
+{
+    TX_Payload[0] = W_TX_PAYLOAD_NOACK;
+#ifdef REDGREEN
+    TX_Payload[1] = 0x11;
+#else
+    TX_Payload[1] = 0x22;
+#endif
+    TX_Payload[2] = ~TX_Payload[1];
+    TX_Payload[3] = 0x00;
+    TX_Payload[4] = ((Serial_buffer[0] << 4) & 0xf0) | (Serial_buffer[1] & 0x0f);
+    TX_Payload[5] = ((Serial_buffer[2] << 4) & 0xf0) | (Serial_buffer[3] & 0x0f);
+    TX_Payload[6] = ((Serial_buffer[4] << 4) & 0xf0) | (Serial_buffer[5] & 0x0f);
+    TX_Payload[7] = ((Serial_buffer[6] << 4) & 0xf0) | (Serial_buffer[7] & 0x0f);
+    TX_PL_Len = 7;
+
+    TX_Address[0] = TX_ADDR;
+    TX_Address[0] = TX_Address[0] | W_REGISTER;
+    TX_Address[1] = 0x00;
+    TX_Address[2] = 0x01;
+    TX_Address[3] = 0x01;
+    TX_Address[4] = 0x01;
+    TX_Address[5] = 0x00;
+    IO_RA3_SetLow(); // CSN low
+    SPI1_WriteBlock(TX_Address, 6);
+    IO_RA3_SetHigh(); // CSN high
+
+    RX_Address[0] = RX_ADDR_P0;
+    RX_Address[0] = RX_Address[0] | W_REGISTER;
+    RX_Address[1] = 0x01;
+    RX_Address[2] = 0x00;
+    RX_Address[3] = 0x00;
+    RX_Address[4] = 0x00;
+    RX_Address[5] = 0x01;
+    RX_Channel = 0x40;
+    IO_RA3_SetLow(); // CSN low
+    SPI1_WriteBlock(RX_Address, 6);
+    IO_RA3_SetHigh(); // CSN high
+
+    SPI_Bout[0] = FEATURE;
+    SPI_Bout[0] = SPI_Bout[0] | W_REGISTER;
+    SPI_Bout[1] = 0x01;
+    IO_RA3_SetLow(); // CSN low
+    SPI1_WriteBlock(SPI_Bout, 2);
+    IO_RA3_SetHigh(); // CSN high
+
+    IO_RA3_SetLow(); // CSN low
+    TX_PL_Len++;
+    SPI1_WriteBlock(TX_Payload, TX_PL_Len);
+    IO_RA3_SetHigh(); // CSN high
+
+    SPI_Bout[0] = SETUP_AW;
+    SPI_Bout[0] = SPI_Bout[0] | W_REGISTER;
+    SPI_Bout[1] = 0x03;
+    IO_RA3_SetLow(); // CSN low
+    SPI1_WriteBlock(SPI_Bout, 2);
+    IO_RA3_SetHigh(); // CSN high
+
+    SPI_Bout[0] = EN_RXADDR;
+    SPI_Bout[0] = SPI_Bout[0] | W_REGISTER;
+    SPI_Bout[1] = 0x03;
+    IO_RA3_SetLow(); // CSN low
+    SPI1_WriteBlock(SPI_Bout, 2);
+    IO_RA3_SetHigh(); // CSN high
+
+    SPI_Bout[0] = RF_CH;
+    SPI_Bout[0] = SPI_Bout[0] | W_REGISTER;
+    SPI_Bout[1] = RX_Channel;
+    IO_RA3_SetLow(); // CSN low
+    SPI1_WriteBlock(SPI_Bout, 2);
+    IO_RA3_SetHigh(); // CSN high
+
+    SPI_Bout[0] = RF_SETUP;
+    SPI_Bout[0] = SPI_Bout[0] | W_REGISTER;
+    SPI_Bout[1] = 0x0e;
+    IO_RA3_SetLow(); // CSN low
+    SPI1_WriteBlock(SPI_Bout, 2);
+    IO_RA3_SetHigh(); // CSN high
+
+    SPI_Bout[0] = CONFIG;
+    SPI_Bout[0] = SPI_Bout[0] | W_REGISTER;
+    SPI_Bout[1] = 0x0e;
+    IO_RA3_SetLow(); // CSN low
+    SPI1_WriteBlock(SPI_Bout, 2);
+    IO_RA3_SetHigh(); // CSN high
+
+    IO_RA3_SetLow(); // CSN low
+    SPI1_ReadBlockCmd(SPI_Bin, 5, 0x0a); // RX_ADDR_P0
+    IO_RA3_SetHigh(); // CSN high
+    Nop();
+    Nop();
+    Nop();
+}
+
+void SI241_SetTxResp(void)
 {
     Si24_Status = 0x40;
+    TimerD._new_tx = 0;
+    RA2_SetHigh(); // CE
+}
+
+void SI241_SetStandby(void)
+{
+    Si24_Status = 0x20;
     RA2_SetLow(); // CE
     SPI_Bout[0] = STATUS;
     SPI_Bout[0] = SPI_Bout[0] | W_REGISTER;

@@ -190,7 +190,7 @@ extern "C" {
                 unsigned _prime_rx : 1;
                 unsigned _window : 1;
                 unsigned _new_rx : 1;
-
+                unsigned _new_tx : 1;
             };
         };
     } TmrDelay;

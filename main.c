@@ -1149,8 +1149,29 @@ void main(void)
                     LEDState[1]._active = 0;
                     RestoreNavDim();
                     PgmStat = 0;
-                    SI241_PwrOff();
 
+                    SI241_SetStandby();
+                    si24_on_timer = 5000; // set to 5000 * 0.001 = to use as delay
+                    while (si24_on_timer >= 4900)
+                    {
+                        Nop();
+                        Nop();
+                        Nop();
+                    }
+                    SI241_SetuptxResp();
+                    SI241_SetTxResp();
+
+                    while (!TimerD._new_tx)
+                    {
+                        Nop();
+                        Nop();
+                        Nop();
+                    }
+
+                    TimerD._new_tx = 0;
+                    SI241_SetStandby();
+
+                    SI241_PwrOff();
                     TimerD._RF_Active = 1;
                     SI241_PwrOn();
                     rf_action._pair_mode = 0;

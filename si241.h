@@ -54,6 +54,8 @@ void SI241_SetStandby(void);
 void SI241_RX0_Payload(uint8_t rx_bc);
 void SI241_RX0_ClearInt(void);
 void SI241_SaveRxAddress(void);
+void SI241_SetuptxResp(void);
+void SI241_SetTxResp(void);
 
 uint8_t SI241_Status(void);
 uint8_t SI241_RX0_BC(void);
