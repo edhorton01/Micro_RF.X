@@ -28,6 +28,9 @@ extern "C" {
     uint8_t ReadFlash(uint32_t addr);
     void writeUserID(uint8_t *flashWrBufPtr);
 
+    enum port_sel {
+        NO_PORT, PORT_AM, PORT_DM
+    };
 
 #ifdef	__cplusplus
 }

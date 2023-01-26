@@ -154,6 +154,24 @@ extern "C" {
     } DIMstateBITS;
 
     typedef struct {
+        uint8_t _port;
+        uint8_t _bitmap;
+
+        union {
+
+            struct {
+                uint8_t _flag;
+            };
+
+            struct {
+                unsigned _onIdle : 1;
+                unsigned _onActive : 1;
+                unsigned _onForce : 1;
+            };
+        };
+    } BLINKstateBITS;
+
+    typedef struct {
         uint16_t _rear_counter;
         uint16_t _front_counter;
 
@@ -176,11 +194,12 @@ extern "C" {
         uint8_t _delaycnt;
         uint8_t _delaytarget;
         uint8_t _statuscnt;
+        uint8_t _pulsecnt;
 
         union {
 
             struct {
-                uint8_t _flags;
+                uint16_t _flags;
             };
 
             struct {
@@ -188,9 +207,12 @@ extern "C" {
                 unsigned _active : 1;
                 unsigned _finished : 1;
                 unsigned _prime_rx : 1;
+                unsigned _go_rx : 1;
                 unsigned _window : 1;
                 unsigned _new_rx : 1;
                 unsigned _new_tx : 1;
+                unsigned _rx_on_full : 1;
+                unsigned _rx_on_pulse : 1;
             };
         };
     } TmrDelay;

@@ -47,10 +47,11 @@ LEDControl LEDState[3];
 
 uint8_t DA_Active;
 uint8_t RunMode;
-uint8_t ModeChangeCnt;
+uint16_t ModeChangeCnt;
 uint8_t TurnOff;
 uint8_t TurnOffCnt;
 uint8_t TurnOffBlink;
+uint8_t TurnOffCntMul;
 
 uint8_t PgmChangeCnt;
 uint8_t PgmStat;
@@ -61,6 +62,7 @@ uint8_t MaybeOff;
 uint8_t Charge;
 uint8_t NeedCal;
 uint16_t ChargeCnt;
+uint16_t ChargeCntScale;
 uint16_t NotifyCnt;
 uint8_t NotifyState;
 
@@ -109,8 +111,9 @@ uint8_t NeedBatCal;
 uint8_t LastChgState;
 
 uint8_t DimCycle;
+uint8_t KeyChangeLock;
 uint8_t TopHold;
-
+BLINKstateBITS BLINKState;
 
 uint8_t SPI_Bout[16];
 uint8_t SPI_Bin[16];
@@ -446,19 +449,36 @@ const uint16_t Led_B3P1[] = {
     0x0018, 0x000A, 0x0002,
 };
 const uint16_t Led_B3P2[] = {
-    0x0000, 0x0400, 0x0001
+    0x0018, 0x0400, 0x0001,
+    0x0018, 0x02A0, 0x0003,
+    0x0018, 0x0140, 0x0002,
+    0x0018, 0x0015, 0x0003,
+    0x0018, 0x000A, 0x0002,
+    0x0018, 0x0400, 0x0001,
+    0x0018, 0x02A0, 0x0003,
+    0x0018, 0x0140, 0x0002,
+    0x0018, 0x0015, 0x0003,
+    0x0018, 0x000A, 0x0002,
 };
+//const uint16_t Led_B3P2[] = {
+//    0x0000, 0x0400, 0x0001
+//};
 const uint16_t Led_B3P3[] = {
-    0x0018, 0x0400, 0x0001,
-    0x0018, 0x02A0, 0x0003,
-    0x0018, 0x0140, 0x0002,
-    0x0018, 0x0015, 0x0003,
-    0x0018, 0x000A, 0x0002,
-    0x0018, 0x0400, 0x0001,
-    0x0018, 0x02A0, 0x0003,
-    0x0018, 0x0140, 0x0002,
-    0x0018, 0x0015, 0x0003,
-    0x0018, 0x000A, 0x0002,
+    0x0036, 0x0200, 0x0001,
+    0x0030, 0x0300, 0x0002,
+    0x0028, 0x0380, 0x0003,
+    0x0022, 0x03c0, 0x0004,
+    0x001a, 0x03e0, 0x0005,
+    0x001a, 0x01f0, 0x0005,
+    0x001a, 0x00f8, 0x0005,
+    0x001a, 0x007c, 0x0005,
+    0x001a, 0x003e, 0x0005,
+    0x001a, 0x001f, 0x0005,
+    0x0022, 0x000f, 0x0004,
+    0x0028, 0x0007, 0x0003,
+    0x0030, 0x0003, 0x0002,
+    0x0036, 0x0001, 0x0001,
+    0x0081, 0x0000, 0x0000,
 };
 
 #elif GERMAN_VER
@@ -1023,14 +1043,15 @@ void main(void)
             {
                 if (PgmStat == 0x81)
                 {
-                    notify_test = 400;
+                    notify_test = 800;
                     PgmStatCnt++;
                     if (PgmStatCnt >= notify_test)
                     {
                         PgmStatCnt = 0;
                         PgmStatDwell = 0;
-                        IO_RE2_SetHigh();
-                        NotifyState = 1;
+                        KeyChangeLock = 0;
+                        //                        IO_RE2_SetHigh();
+                        //                        NotifyState = 1;
                     }
                 }
 #ifdef ALLIR_VER
@@ -1182,14 +1203,36 @@ void main(void)
                 }
             }
         }
-        else if (TimerD._RF_Active && TimerD._finished && !TimerD._active && TimerD._prime_rx && TimerD._window)
+        else if (TimerD._RF_Active && TimerD._finished && !TimerD._active && TimerD._prime_rx && (TimerD._rx_on_full || TimerD._rx_on_pulse) && TimerD._window)
         {
             TimerD._window = 0;
             TimerD._statuscnt++;
-            if (TimerD._statuscnt >= 50)
+            if (TimerD._statuscnt >= 200)
             {
                 TimerD._statuscnt = 0;
-                RC2_Toggle(); // Test Point RC2
+                if (TimerD._rx_on_full)
+                {
+                    RC2_Toggle(); // Test Point RC2
+                }
+                if (si24_on_timer != 0)
+                {
+                    si24_on_timer--;
+                    if (si24_on_timer == 0)
+                    {
+                        if (TimerD._rx_on_full)
+                        {
+                            TimerD._rx_on_full = 0;
+                            TimerD._rx_on_pulse = 1;
+                            TimerD._pulsecnt = 0;
+                            si24_on_timer = si24_on_timer_val; // 10 Minutes
+                        }
+                        else if (TimerD._rx_on_pulse)
+                        {
+                            TimerD._rx_on_pulse = 0;
+                            SI241_PwrOff();
+                        }
+                    }
+                }
                 //                si241_stat = SI241_Status();
             }
         }
@@ -1200,6 +1243,14 @@ void main(void)
         {
             if (PgmStat != 0x81)
             {
+                TimerD._RF_Active = 1; // Enable RF
+                if (TimerD._rx_on_pulse)
+                {
+                    TimerD._rx_on_pulse = 0;
+                    SI241_SetRx();
+                }
+                TimerD._rx_on_full = 1;
+                si24_on_timer = si24_on_timer_val; // 10 Minutes
                 OSCCONbits.IDLEN = 1;
                 OSCCONbits.IRCF = 0x07;
             }
@@ -1222,25 +1273,30 @@ void main(void)
                 {
                     ChargeCnt = 0;
                 }
-                //		if (ChargeCnt > 0x20)
-                if (ChargeCnt > 0xff)
+                ChargeCntScale = ChargeCnt;
+                if (OSCCONbits.IRCF != 0x02)
+                {
+                    ChargeCntScale = ChargeCntScale >> 7;
+                }
+
+                if (ChargeCntScale > 0xff)
                 {
                     ChargeCnt = 0;
+                    ChargeCntScale = 0;
                 }
                 work = PORTE & 0x03;
                 if (work == 0x02)
                 {
-                    //		    if (ChargeCnt >= 0x1f)
                     LastChgState = work;
-                    if (ChargeCnt >= 0xff)
+                    if (ChargeCntScale >= 0xff)
                     {
                         MaybeOff = 0;
 #ifdef ALLIR_VER
                         TRISDbits.TRISD7 = 1;
 #else
-                        TRISDbits.TRISD3 = 1;
+                        TRISAbits.TRISA6 = 1;
 #endif
-                        if (!WL_hold && !BOOT_hold)
+                        if (!WL_hold && !BOOT_hold && !TimerD._RF_Active)
                         {
                             OSCCONbits.IRCF = 0x02;
                         }
@@ -1272,15 +1328,15 @@ void main(void)
                     }
                     //		    if ((ChargeCnt == 0x1d) || (ChargeCnt == 0x1f))
 
-                    if ((ChargeCnt == 0xfa) || (ChargeCnt == 0xff))
+                    if ((ChargeCntScale == 0xfa) || (ChargeCntScale == 0xff))
                     {
                         MaybeOff = 0;
 #ifdef ALLIR_VER
                         TRISDbits.TRISD7 = 1;
 #else
-                        TRISDbits.TRISD3 = 1;
+                        TRISAbits.TRISA6 = 1;
 #endif
-                        if (!WL_hold && !BOOT_hold && !BRT_hold && !BACK_hold && !FRONT_hold)
+                        if (!WL_hold && !BOOT_hold && !BRT_hold && !BACK_hold && !FRONT_hold && !TimerD._RF_Active)
                         {
                             OSCCONbits.IRCF = 0x02;
                         }
@@ -1392,7 +1448,18 @@ void ServiceKeyPress(void)
                         if (Key._cmd != Key._bounce)
                         {
                             Key._cmd = Key._bounce;
-                            KeyStatus._new_cmd = 1;
+                            if (KeyChangeLock == 0x40)
+                            {
+                                if ((Key._cmd != 0xf8) && (Key._cmd != 0xdc))
+                                {
+                                    KeyChangeLock == 0;
+                                    KeyStatus._new_cmd = 1;
+                                }
+                            }
+                            else if (KeyChangeLock != 0x80)
+                            {
+                                KeyStatus._new_cmd = 1;
+                            }
                         }
                     }
                 }
@@ -1407,6 +1474,7 @@ void ServiceKeyPress(void)
             if (!(TurnOff & 0x80))
             {
                 TurnOff = 0;
+                KeyChangeLock == 0;
             }
         }
         //        if (kb != 0xfc || kb == 0x98 || kb == 0xF0)
@@ -1423,7 +1491,7 @@ void ServiceKeyPress(void)
                     Nop();
                     Nop();
                     PgmStat = 0x81;
-                    PgmStatCnt = 400;
+                    PgmStatCnt = 0;
                     PgmStatDwell = 0;
                     LEDState[0]._active = 0;
                     LEDState[1]._active = 0;
@@ -1434,6 +1502,17 @@ void ServiceKeyPress(void)
                     SI241_PwrOn();
                     rf_action._pair_mode = 1;
                     rf_action._pair_active = 0;
+
+                    DimB_Hold = DimB;
+                    DimB._Nav_Dim = 1;
+                    DimB._DimCnt = 0;
+                    l_pnt = (uint16_t*) LedRear_FullPWR;
+                    ind = 3 - DimB._DimCnt + LEDState[0]._Delay;
+                    LEDState[0]._timer_timeout = l_pnt[ind];
+                    WL_hold = 0x45;
+                    init_button((uint8_t) 3, (uint8_t) 0);
+                    WL_hold = 0x00;
+                    KeyChangeLock = 0x80;
                 }
             }
 
@@ -1491,7 +1570,7 @@ void ServiceKeyPress(void)
             {
                 BRT_hold_cnt++;
                 test = 8;
-                if (BRT_hold_trip || (LEDState[0]._active != 0) || (LEDState[1]._active != 0))
+                if (BRT_hold_trip || (LEDState[0]._active != 0) || (LEDState[1]._active != 0) || TimerD._RF_Active)
                 {
                     test = 2048;
                 }
@@ -1615,7 +1694,7 @@ void ServiceKeyPress(void)
 #ifdef ALLIR_VER
                         TRISDbits.TRISD7 = 1;
 #else
-                        TRISDbits.TRISD3 = 1;
+                        TRISAbits.TRISA6 = 1;
 #endif
                         OSCCONbits.IDLEN = 1;
                         TMR0_StopTimer();
@@ -1776,11 +1855,17 @@ void ServiceKeyPress(void)
         {
             if (!(TurnOff & 0x80))
             {
+                test = 0x20;
+                if (BRT_hold_trip || (LEDState[0]._active != 0) || (LEDState[1]._active != 0) || TimerD._RF_Active)
+                {
+                    test = 2048;
+                }
                 ModeChangeCnt++;
-                if (ModeChangeCnt >= 0x20)
+                if (ModeChangeCnt >= test)
                 {
                     TurnOff = 0x81;
                     TurnOffCnt = 0;
+                    TurnOffCntMul = 0;
                     Nop();
                     Nop();
                 }
@@ -1789,7 +1874,19 @@ void ServiceKeyPress(void)
             {
                 Nop();
                 Nop();
-                TurnOffCnt++;
+                if (BRT_hold_trip || (LEDState[0]._active != 0) || (LEDState[1]._active != 0) || TimerD._RF_Active)
+                {
+                    TurnOffCntMul++;
+                    if (TurnOffCntMul >= 0x40)
+                    {
+                        TurnOffCntMul = 0;
+                        TurnOffCnt++;
+                    }
+                }
+                else
+                {
+                    TurnOffCnt++;
+                }
                 TurnOffBlink = 0;
                 if ((TurnOffCnt >= 0x01) && TurnOffCnt <= 0x08)
                 {
@@ -1857,6 +1954,8 @@ void ServiceKeyPress(void)
                     }
                     Nop();
                     Nop();
+                    Nop();
+                    Nop();
                     Reset();
                 }
             }
@@ -1900,7 +1999,13 @@ void ServiceRFCmd(void)
         switch (rf_action._RF_cmd)
         {
 
+#ifdef REDGREEN
         case 0x37:
+        case 0x3d:
+#else
+        case 0x37:
+        case 0x1f:
+#endif
         {
             DimB._IR_Mode = 0;
             DimB._Cust_Mode = 0;
@@ -1911,134 +2016,143 @@ void ServiceRFCmd(void)
             BOOT_hold_cnt = 0;
             DimB._SOS_Mode = 0;
 
-            if (((LEDState[0]._button == 8) && LEDState[0]._active) && ((LEDState[1]._button == 9) && LEDState[1]._active))
-            {
-                clean_up();
-                DimB._GA_Mode = 1;
-                LEDState[0]._active = 0;
-                LEDState[1]._active = 0;
-                RestoreNavDim();
-                WL_hold = 0x42;
-                init_button((uint8_t) 1, (uint8_t) 0);
-                WL_hold = 0x42;
-                init_button((uint8_t) 2, (uint8_t) 1);
-                WL_hold = 0;
-            }
-            else if (((LEDState[0]._button == 1) && (LEDState[0]._button_press == 1) && LEDState[0]._active) && ((LEDState[1]._button == 2) && (LEDState[1]._button_press == 1) && LEDState[1]._active))
-            {
-                clean_up();
-                DimB._GA_Mode = 0;
-                LEDState[0]._active = 0;
-                LEDState[1]._active = 0;
-            }
-            else
-            {
-                DimB._GA_Mode = 1;
+            clean_up();
+            DimB._GA_Mode = 0;
+            LEDState[0]._active = 0;
+            LEDState[1]._active = 0;
+        }
+
 #ifdef REDGREEN
-                DimB_Hold = DimB;
-                DimB._Nav_Dim = 1;
-                DimB._DimCnt = 0;
-                l_pnt = (uint16_t*) LedRear_FullPWR;
-                ind = 3 - DimB._DimCnt + LEDState[0]._Delay;
-                LEDState[0]._timer_timeout = l_pnt[ind];
-                l_pnt = (uint16_t*) LedFront_FullPWR;
-                ind = 3 - DimB._DimCnt + LEDState[1]._Delay;
-                LEDState[1]._timer_timeout = l_pnt[ind];
+        case 0xb7:
+        case 0xbd:
+#else
+        case 0xb7:
+        case 0x9f:
 #endif
-                init_button((uint8_t) 8, (uint8_t) 0);
-                init_button((uint8_t) 9, (uint8_t) 1);
-            }
-            break;
-        }
-
-        case 0x1f:
         {
             DimB._IR_Mode = 0;
             DimB._Cust_Mode = 0;
-            if (DimB._SOS_Mode || DimB._GA_Mode)
-            {
-                LEDState[0]._active = 0;
-                LEDState[1]._active = 0;
-                DimB._SOS_Mode = 0;
-                DimB._GA_Mode = 0;
-                clean_up();
+            DimB._SOS_Mode = 0;
+            WL_hold_trip = 0;
+            BRT_hold_trip = 0;
+            BOOT_hold = 0x80;
+            BOOT_hold_cnt = 0;
+            DimB._SOS_Mode = 0;
+            DimB._GA_Mode = 1;
 
-            }
-            if (FRONT_hold_trip == 0x80)
-            {
-                BRT_hold_trip = 0;
-                FRONT_hold_trip = 0;
-                LEDState[0]._active = 0;
-                LEDState[1]._active = 0;
-            }
-            else
-            {
-                WL_hold_trip = 0;
-                BRT_hold_trip = 0;
-                BOOT_hold_trip = 0;
-                FRONT_hold_trip = 0;
-                DimB._SOS_Mode = 0;
-                DimB._IR_Mode = 0;
-                DimB._Cust_Mode = 0;
-                if ((LEDState[0]._button == 3) || (LEDState[0]._button == 5) || (LEDState[0]._button == 7))
-                {
-                    DimB._GA_Mode = 0;
-                    LEDState[0]._active = 0;
-                    LEDState[0]._button = 0;
-                    clean_up();
-                }
-                RestoreNavDim();
-                DimB._GA_Mode = 0;
-                init_button((uint8_t) 1, (uint8_t) 0);
-            }
+#ifdef REDGREEN
+            DimB_Hold = DimB;
+            DimB._Nav_Dim = 1;
+            DimB._DimCnt = 0;
+            l_pnt = (uint16_t*) LedRear_FullPWR;
+            ind = 3 - DimB._DimCnt + LEDState[0]._Delay;
+            LEDState[0]._timer_timeout = l_pnt[ind];
+            l_pnt = (uint16_t*) LedFront_FullPWR;
+            ind = 3 - DimB._DimCnt + LEDState[1]._Delay;
+            LEDState[1]._timer_timeout = l_pnt[ind];
+#endif
+            init_button((uint8_t) 8, (uint8_t) 0);
+            init_button((uint8_t) 9, (uint8_t) 1);
             break;
         }
 
-        case 0x3d:
-        {
-            DimB._IR_Mode = 0;
-            DimB._Cust_Mode = 0;
-            if (DimB._SOS_Mode || DimB._GA_Mode)
-            {
-                LEDState[0]._active = 0;
-                LEDState[1]._active = 0;
-                DimB._SOS_Mode = 0;
-                DimB._GA_Mode = 0;
-                clean_up();
+            /*
+                    case 0x1f:
+                    {
+                        DimB._IR_Mode = 0;
+                        DimB._Cust_Mode = 0;
+                        if (DimB._SOS_Mode || DimB._GA_Mode)
+                        {
+                            LEDState[0]._active = 0;
+                            LEDState[1]._active = 0;
+                            DimB._SOS_Mode = 0;
+                            DimB._GA_Mode = 0;
+                            clean_up();
 
-            }
-            if (BACK_hold_trip == 0x80)
-            {
-                BRT_hold_trip = 0;
-                BACK_hold_trip = 0;
-                LEDState[0]._active = 0;
-                LEDState[1]._active = 0;
-            }
-            else
-            {
-                WL_hold_trip = 0;
-                BRT_hold_trip = 0;
-                BOOT_hold_trip = 0;
-                BACK_hold_trip = 0;
-                DimB._SOS_Mode = 0;
-                DimB._IR_Mode = 0;
-                DimB._Cust_Mode = 0;
+                        }
+                        if (FRONT_hold_trip == 0x80)
+                        {
+                            BRT_hold_trip = 0;
+                            FRONT_hold_trip = 0;
+                            LEDState[0]._active = 0;
+                            LEDState[1]._active = 0;
+                        }
+                        else
+                        {
+                            WL_hold_trip = 0;
+                            BRT_hold_trip = 0;
+                            BOOT_hold_trip = 0;
+                            FRONT_hold_trip = 0;
+                            DimB._SOS_Mode = 0;
+                            DimB._IR_Mode = 0;
+                            DimB._Cust_Mode = 0;
+                            if ((LEDState[0]._button == 3) || (LEDState[0]._button == 5) || (LEDState[0]._button == 7))
+                            {
+                                DimB._GA_Mode = 0;
+                                LEDState[0]._active = 0;
+                                LEDState[0]._button = 0;
+                                clean_up();
+                            }
+                            RestoreNavDim();
+                            DimB._GA_Mode = 0;
+                            init_button((uint8_t) 1, (uint8_t) 0);
+                        }
+                        break;
+                    }
+             */
+            /*
+                    case 0x3d:
+                    {
+                        DimB._IR_Mode = 0;
+                        DimB._Cust_Mode = 0;
+                        if (DimB._SOS_Mode || DimB._GA_Mode)
+                        {
+                            LEDState[0]._active = 0;
+                            LEDState[1]._active = 0;
+                            DimB._SOS_Mode = 0;
+                            DimB._GA_Mode = 0;
+                            clean_up();
 
-                if ((LEDState[0]._button == 3) || (LEDState[0]._button == 5))
-                {
-                    LEDState[0]._active = 0;
-                    LEDState[1]._active = 0;
-                    LEDState[0]._button = 0;
-                    clean_up();
-                }
-                RestoreNavDim();
-                DimB._GA_Mode = 0;
-                init_button((uint8_t) 2, (uint8_t) 1);
-            }
-            break;
-        }
+                        }
+                        if (BACK_hold_trip == 0x80)
+                        {
+                            BRT_hold_trip = 0;
+                            BACK_hold_trip = 0;
+                            LEDState[0]._active = 0;
+                            LEDState[1]._active = 0;
+                        }
+                        else
+                        {
+                            WL_hold_trip = 0;
+                            BRT_hold_trip = 0;
+                            BOOT_hold_trip = 0;
+                            BACK_hold_trip = 0;
+                            DimB._SOS_Mode = 0;
+                            DimB._IR_Mode = 0;
+                            DimB._Cust_Mode = 0;
 
+                            if ((LEDState[0]._button == 3) || (LEDState[0]._button == 5))
+                            {
+                                LEDState[0]._active = 0;
+                                LEDState[1]._active = 0;
+                                LEDState[0]._button = 0;
+                                clean_up();
+                            }
+                            RestoreNavDim();
+                            DimB._GA_Mode = 0;
+                            init_button((uint8_t) 2, (uint8_t) 1);
+                        }
+                        break;
+                    }
+             */
         case 0x3e:
+        {
+            LEDState[2]._active = 0;
+            TopHold = 0;
+            break;
+        }
+
+        case 0xbe:
         {
             DimB._IR_Mode = 0;
             DimB._Cust_Mode = 0;
@@ -2056,11 +2170,11 @@ void ServiceRFCmd(void)
                 TopHold = 1;
             }
             init_button((uint8_t) 10, (uint8_t) 2);
-
             break;
         }
 
         case 0x3b:
+        case 0xbb:
         {
             BRT_hold = 0x80;
             BRT_hold_cnt = 0;
@@ -2117,7 +2231,6 @@ void ServiceRFCmd(void)
 
         case 0xc4:
         {
-
             if (DimB._SOS_Mode)
             {
                 LEDState[0]._active = 0;
@@ -2128,55 +2241,57 @@ void ServiceRFCmd(void)
                 BRT_hold_cnt = 0;
                 BRT_hold = 0;
             }
+            break;
+        }
+
+        case 0x44:
+        {
+            RestoreNavDim();
+            BRT_hold = 0x40;
+            BRT_hold_cnt = 0;
+            BRT_hold_trip = 0x80;
+            DimB._MaxOutD = 0x01;
+            BACK_hold_trip = 0;
+            FRONT_hold_trip = 0;
+            BOOT_hold_trip = 0;
+            WL_hold_trip = 0;
+            LEDState[0]._active = 0;
+            LEDState[1]._active = 0;
+            DimB._SOS_Mode = 1;
+#ifdef LE_EXT_VER
+            bb = 8;
+#elif BUTTON_EXTEND
+            bb = 9;
+#else
+            bb = 7;
+#endif
+            l_pnt = (uint16_t*) LedRear_FullPWR;
+            ind = 3 - DimB._DimCnt + LEDState[0]._Delay;
+            if (ind == 0)
+            {
+                LEDState[0]._timer_timeout = l_pnt[ind] + 0x100;
+            }
             else
             {
-                RestoreNavDim();
-                BRT_hold = 0x40;
-                BRT_hold_cnt = 0;
-                BRT_hold_trip = 0x80;
-                DimB._MaxOutD = 0x01;
-                BACK_hold_trip = 0;
-                FRONT_hold_trip = 0;
-                BOOT_hold_trip = 0;
-                WL_hold_trip = 0;
-                LEDState[0]._active = 0;
-                LEDState[1]._active = 0;
-                DimB._SOS_Mode = 1;
-#ifdef LE_EXT_VER
-                bb = 8;
-#elif BUTTON_EXTEND
-                bb = 9;
-#else
-                bb = 7;
-#endif
-                l_pnt = (uint16_t*) LedRear_FullPWR;
-                ind = 3 - DimB._DimCnt + LEDState[0]._Delay;
-                if (ind == 0)
-                {
-                    LEDState[0]._timer_timeout = l_pnt[ind] + 0x100;
-                }
-                else
-                {
-                    LEDState[0]._timer_timeout = l_pnt[ind];
-                }
-
-                l_pnt = (uint16_t*) LedFront_FullPWR;
-                ind = 3 - DimB._DimCnt + LEDState[1]._Delay;
-                if (ind == 0)
-                {
-                    LEDState[1]._timer_timeout = l_pnt[ind] + 0x100;
-                }
-                else
-                {
-                    LEDState[1]._timer_timeout = l_pnt[ind];
-                }
-
-                BRT_hold = 0x20;
-                BACK_hold = 0x20;
-                init_button((uint8_t) bb, (uint8_t) 0);
-                BACK_hold = 0;
-                BRT_hold = 0;
+                LEDState[0]._timer_timeout = l_pnt[ind];
             }
+
+            l_pnt = (uint16_t*) LedFront_FullPWR;
+            ind = 3 - DimB._DimCnt + LEDState[1]._Delay;
+            if (ind == 0)
+            {
+                LEDState[1]._timer_timeout = l_pnt[ind] + 0x100;
+            }
+            else
+            {
+                LEDState[1]._timer_timeout = l_pnt[ind];
+            }
+
+            BRT_hold = 0x20;
+            BACK_hold = 0x20;
+            init_button((uint8_t) bb, (uint8_t) 0);
+            BACK_hold = 0;
+            BRT_hold = 0;
             break;
         }
 
@@ -2199,11 +2314,12 @@ void ServiceCmd(void)
 
         switch (Key._cmd)
         {
-        case 0xD0:
+        case 0xD8:
         {
             if (!DimB._German_IR)
             {
                 TurnOff = 1;
+                KeyChangeLock = 0x40;
                 ModeChangeCnt = 0;
                 LEDState[0]._active = 0;
                 LEDState[1]._active = 0;
@@ -2220,7 +2336,7 @@ void ServiceCmd(void)
             break;
         }
 
-        case 0xE8:
+        case 0x6c:
         {
             PgmStat = 0x80;
             PgmStatCnt = 0;
@@ -2320,19 +2436,16 @@ void ServiceCmd(void)
         }
         case 0xdc:
         {
-            PgmStat = 0;
             if (!DimB._German_IR)
             {
                 DimB._IR_Mode = 0;
                 DimB._Cust_Mode = 0;
-                if (DimB._SOS_Mode || DimB._GA_Mode)
+                if (DimB._SOS_Mode)
                 {
                     LEDState[0]._active = 0;
                     LEDState[1]._active = 0;
                     DimB._SOS_Mode = 0;
-                    DimB._GA_Mode = 0;
                     clean_up();
-
                 }
                 if (FRONT_hold_trip == 0x80)
                 {
@@ -2341,7 +2454,7 @@ void ServiceCmd(void)
                     LEDState[0]._active = 0;
                     LEDState[1]._active = 0;
                 }
-                else
+                else if (PgmStat != 0x81)
                 {
                     if (!Double_Tap._front_dt_inprog)
                     {
@@ -2398,7 +2511,6 @@ void ServiceCmd(void)
         }
         case 0x7c:
         {
-            PgmStat = 0;
             DimB._IR_Mode = 0;
             DimB._Cust_Mode = 0;
             DimB._SOS_Mode = 0;
@@ -2406,6 +2518,13 @@ void ServiceCmd(void)
             {
                 BOOT_hold_trip = 0;
                 BRT_hold_trip = 0;
+                LEDState[0]._active = 0;
+                LEDState[1]._active = 0;
+            }
+            else if (PgmStat == 0x81)
+            {
+                PgmStat = 0;
+                DimB = DimB_Hold;
                 LEDState[0]._active = 0;
                 LEDState[1]._active = 0;
             }
@@ -2542,7 +2661,6 @@ void ServiceCmd(void)
 
         case 0xbc:
         {
-            PgmStat = 0;
             BRT_hold = 0x80;
             BRT_hold_cnt = 0;
             if ((LEDState[0]._active != 0) || (LEDState[1]._active != 0))
@@ -2674,7 +2792,6 @@ void ServiceCmd(void)
 
         case 0xf4:
         {
-            PgmStat = 0;
             DimB._IR_Mode = 0;
             DimB._Cust_Mode = 0;
             if (DimB._SOS_Mode)
@@ -2682,16 +2799,18 @@ void ServiceCmd(void)
                 DimB._SOS_Mode = 0;
                 LEDState[1]._active = 0;
             }
-            if (!LEDState[0]._active && !LEDState[1]._active)
+            else if (PgmStat != 0x81)
             {
-                clean_up();
+                if (!LEDState[0]._active && !LEDState[1]._active)
+                {
+                    clean_up();
+                }
+                if (((LEDState[0]._button == 3) || (LEDState[0]._button == 9)) && LEDState[0]._active)
+                {
+                    TopHold = 1;
+                }
+                init_button((uint8_t) 10, (uint8_t) 2);
             }
-            if (((LEDState[0]._button == 3) || (LEDState[0]._button == 9)) && LEDState[0]._active)
-            {
-                TopHold = 1;
-            }
-            init_button((uint8_t) 10, (uint8_t) 2);
-
             break;
         }
 
@@ -2767,6 +2886,12 @@ void init_button(uint8_t button, uint8_t pos)
         LEDState[pos]._active = 1;
     }
     else if (WL_hold == 0x44)
+    {
+        LEDState[pos]._button_press = 1;
+        LEDState[pos]._button = button;
+        LEDState[pos]._active = 1;
+    }
+    else if (WL_hold == 0x45)
     {
         LEDState[pos]._button_press = 2;
         LEDState[pos]._button = button;
@@ -3172,6 +3297,8 @@ void ServiceTopLED(uint8_t pos)
 void SendLEDs(void)
 {
     uint8_t trisa_work, trisd_work;
+    uint16_t* b_pnt;
+
     Nop();
     Nop();
     Nop();
@@ -3198,94 +3325,122 @@ void SendLEDs(void)
     trisd_work = 0;
 #endif
 
-    if (LEDState[0]._active)
+    if ((!(LEDState[0]._active) && !(LEDState[1]._active) && !(LEDState[2]._active) && !(timer0Cycle & 0x01) && (BLINKState._onIdle) || BLINKState._onForce))
     {
-        trisa_work = trisa_work | LEDState[0]._tris_a_contrib;
-        trisd_work = trisd_work | LEDState[0]._tris_d_contrib;
-    }
-    if (LEDState[1]._active)
-    {
-        trisa_work = trisa_work | LEDState[1]._tris_a_contrib;
-        trisd_work = trisd_work | LEDState[1]._tris_d_contrib;
-    }
-    if (LEDState[2]._active)
-    {
-        trisd_work = trisd_work | LEDState[2]._tris_d_contrib;
-    }
-
-    if (DimB._MaxOutF || DimB._MaxOutWL)
-    {
-        TRISA = trisa_work | 0b00000011; // RA0, RA1 analog inputs
-        TRISD = trisd_work;
-    }
-        //    else if (!(timer0Cycle & 0x01))
-    else if ((timer0Cycle & 0x01))
-    {
-        if (T3CONbits.TMR3ON)
+        switch (BLINKState._port)
         {
-            // Allow All
-            TRISA = trisa_work | 0b00000011; // RA0, RA1 analog inputs
-            TRISD = trisd_work;
+        case NO_PORT:
+            break;
+        case PORT_AM:
+            TRISA = BLINKState._bitmap | 0b00000011; // RA0, RA1 analog inputs
+            break;
+        case PORT_DM:
+            TRISD = BLINKState._bitmap;
+            break;
+        }
+        if (BLINKState._onForce)
+        {
+            b_pnt = (uint16_t*) LedRear_FullPWR;
+            timer1ReloadVal = b_pnt[3];
         }
         else
         {
-            // Allow D8, D9, D10
-            TRISA = (trisa_work & 0b01110000) | 0b00000011;
-            // Allow D6, D7, D11
-            TRISD = trisd_work & 0b10001100;
+            timer1ReloadVal = 0xfe80;
         }
-        if (DimB._Bat_Status)
-        {
-            timer1ReloadVal = 0xffc0;
-        }
-        else
-        {
-            timer1ReloadVal = LEDState[0]._timer_timeout;
-#ifdef AMAZON_VER
-            if (DimCycle & 0x80)
-            {
-                if (DimCycle & 0x01)
-                {
-                    DimCycle = 0x80;
-                }
-                else
-                {
-                    DimCycle = 0x81;
-                }
-            }
-#else
-            timer1ReloadVal = LEDState[0]._timer_timeout;
-#endif
-        }
+        IO_RE2_SetHigh();
         TMR1_StartTimer();
     }
     else
     {
-        if (T1CONbits.TMR1ON)
+        if (LEDState[0]._active)
         {
-            // Allow All
-            TRISA = trisa_work | 0b00000011;
-            if (!TurnOff)
+            trisa_work = trisa_work | LEDState[0]._tris_a_contrib;
+            trisd_work = trisd_work | LEDState[0]._tris_d_contrib;
+        }
+        if (LEDState[1]._active)
+        {
+            trisa_work = trisa_work | LEDState[1]._tris_a_contrib;
+            trisd_work = trisd_work | LEDState[1]._tris_d_contrib;
+        }
+        if (LEDState[2]._active)
+        {
+            trisd_work = trisd_work | LEDState[2]._tris_d_contrib;
+        }
+
+        if (DimB._MaxOutF || DimB._MaxOutWL)
+        {
+            TRISA = trisa_work | 0b00000011; // RA0, RA1 analog inputs
+            TRISD = trisd_work;
+        }
+            //    else if (!(timer0Cycle & 0x01))
+        else if ((timer0Cycle & 0x01))
+        {
+            if (T3CONbits.TMR3ON)
             {
+                // Allow All
+                TRISA = trisa_work | 0b00000011; // RA0, RA1 analog inputs
                 TRISD = trisd_work;
             }
+            else
+            {
+                // Allow D8, D9, D10
+                TRISA = (trisa_work & 0b01110000) | 0b00000011;
+                // Allow D6, D7, D11
+                TRISD = trisd_work & 0b10001100;
+            }
+            if (DimB._Bat_Status)
+            {
+                timer1ReloadVal = 0xffc0;
+            }
+            else
+            {
+                timer1ReloadVal = LEDState[0]._timer_timeout;
+#ifdef AMAZON_VER
+                if (DimCycle & 0x80)
+                {
+                    if (DimCycle & 0x01)
+                    {
+                        DimCycle = 0x80;
+                    }
+                    else
+                    {
+                        DimCycle = 0x81;
+                    }
+                }
+#else
+                timer1ReloadVal = LEDState[0]._timer_timeout;
+#endif
+            }
+            TMR1_StartTimer();
         }
         else
         {
-            // Allow
-            TRISA = (trisa_work & 0b00000000) | 0b00000011;
-            // Allow D1, D2, D3, D4, D5
-            TRISD = trisd_work & 0b01110011;
+            if (T1CONbits.TMR1ON)
+            {
+                // Allow All
+                TRISA = trisa_work | 0b00000011;
+                if (!TurnOff)
+                {
+                    TRISD = trisd_work;
+                }
+            }
+            else
+            {
+                // Allow
+                TRISA = (trisa_work & 0b00000000) | 0b00000011;
+                // Allow D1, D2, D3, D4, D5
+                TRISD = trisd_work & 0b01110011;
+            }
+            if (DimB._Bat_Status)
+            {
+                timer3ReloadVal = 0xffd0;
+            }
+            else
+            {
+                timer3ReloadVal = LEDState[1]._timer_timeout;
+            }
+            TMR3_StartTimer();
         }
-        if (DimB._Bat_Status)
-        {
-            timer3ReloadVal = 0xffd0;
-        }
-        else
-        {
-            timer3ReloadVal = LEDState[1]._timer_timeout;
-        }
-        TMR3_StartTimer();
     }
 }
 

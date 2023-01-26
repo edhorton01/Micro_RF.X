@@ -7,6 +7,7 @@
 #include "main.h"
 
 #define	    REDGREEN 1
+//#define	    WHITEWHITE 1
 
 extern uint8_t SPI_Bout[16];
 extern uint8_t SPI_Bin[16];
@@ -56,16 +57,18 @@ void SI241_PwrOn(void)
             INTCON2bits.INTEDG2 = 0; // Set to falling edge
             INTCON3bits.INT2IE = 1; // Enable
             SSP1CON1bits.SSPEN = 1;
-            si24_on_timer = 5000; // set to 5000 * 0.001 = 5 Seconds
+            si24_on_timer = si24_on_timer_val; // 10 Minutes
         }
     }
-    else if (IO_RC6_GetValue() && TimerD._finished && !TimerD._active)
-    {
-        if (si24_on_timer != 0)
+    /*
+        else if (IO_RC6_GetValue() && TimerD._finished && !TimerD._active)
         {
-            si24_on_timer--;
+            if (si24_on_timer != 0)
+            {
+                si24_on_timer--;
+            }
         }
-    }
+     */
 }
 
 void SI241_PwrOff(void)
@@ -156,7 +159,7 @@ void SI241_SetupRx(void)
 
     SPI_Bout[0] = RF_SETUP;
     SPI_Bout[0] = SPI_Bout[0] | W_REGISTER;
-    SPI_Bout[1] = 0x08;
+    SPI_Bout[1] = 0x0e;
     IO_RA3_SetLow(); // CSN low
     SPI1_WriteBlock(SPI_Bout, 2);
     IO_RA3_SetHigh(); // CSN high
@@ -164,6 +167,13 @@ void SI241_SetupRx(void)
     SPI_Bout[0] = CONFIG;
     SPI_Bout[0] = SPI_Bout[0] | W_REGISTER;
     SPI_Bout[1] = 0x0F;
+    IO_RA3_SetLow(); // CSN low
+    SPI1_WriteBlock(SPI_Bout, 2);
+    IO_RA3_SetHigh(); // CSN high
+
+    SPI_Bout[0] = EN_AA;
+    SPI_Bout[0] = SPI_Bout[0] | W_REGISTER;
+    SPI_Bout[1] = 0x01;
     IO_RA3_SetLow(); // CSN low
     SPI1_WriteBlock(SPI_Bout, 2);
     IO_RA3_SetHigh(); // CSN high
@@ -181,6 +191,13 @@ void SI241_SetRx(void)
     Si24_Status = 0x80;
     TimerD._new_rx = 0;
     RA2_SetHigh(); // CE
+}
+
+void SI241_ClearRx(void)
+{
+    Si24_Status = 0x80;
+    TimerD._new_rx = 0;
+    RA2_SetLow(); // CE
 }
 
 void SI241_SetuptxResp(void)
@@ -429,6 +446,14 @@ void SI241_LoadRxAddress(void)
             RX_Address[4] = 0x00;
             RX_Address[5] = 0x01;
             RX_Channel = 0x40;
+        }
+        else
+        {
+#ifdef REDGREEN
+            RX_Address[1] = RX_Address[1] & 0x7f;
+#else
+            RX_Address[1] = RX_Address[1] | 0x80;
+#endif
         }
     }
 }

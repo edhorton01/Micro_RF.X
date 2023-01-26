@@ -288,6 +288,24 @@ void TMR0_ISR(void)
     if (TimerD._RF_Active)
     {
         SI241_PwrOn();
+        if (TimerD._rx_on_pulse)
+        {
+            TimerD._pulsecnt++;
+            if (TimerD._pulsecnt >= 5)
+            {
+                TimerD._pulsecnt = 0;
+            }
+            if (TimerD._pulsecnt == 0)
+            {
+                SI241_SetRx();
+                RC2_SetHigh();
+            }
+            else
+            {
+                SI241_ClearRx();
+                RC2_SetLow();
+            }
+        }
     }
 }
 

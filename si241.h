@@ -1,7 +1,7 @@
 /* Si241 register definations*/
 
 #define CONFIG          0x00
-#define EE_AA           0x01
+#define EN_AA           0x01
 #define EN_RXADDR       0x02
 #define SETUP_AW        0x03
 #define SETUP_RETR      0x04
@@ -40,6 +40,7 @@
 
 #define Payload_len     0x02
 #define Payload_len_pair     0x07
+#define si24_on_timer_val   600    // 600 * 0.1 Sec * 10 Minutes
 
 void SI241_PwrOn(void);
 void SI241_PwrOff(void);
@@ -48,6 +49,7 @@ void SI241_Interrupt(void);
 void SI241_PwrOff(void);
 void SI241_SetupRx(void);
 void SI241_SetRx(void);
+void SI241_ClearRx(void);
 void SI241_LoadTxAddress(void);
 void SI241_LoadRxAddress(void);
 void SI241_SetStandby(void);
