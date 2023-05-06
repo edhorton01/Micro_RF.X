@@ -2245,7 +2245,9 @@ void ServiceRFCmd(void)
             ind = 3 - DimB._DimCnt + LEDState[1]._Delay;
             LEDState[1]._timer_timeout = l_pnt[ind];
             //#endif
+            ForceButton = 0x80;
             init_button((uint8_t) 8, (uint8_t) 0);
+            ForceButton = 0x80;
             init_button((uint8_t) 9, (uint8_t) 1);
             break;
         }

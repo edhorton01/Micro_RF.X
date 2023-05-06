@@ -24,8 +24,8 @@
 //Nav light so use NAVLIGHT_VER for th1s group
 
 #define	    NAVLIGHT_VER 1
-//#define	    REDGREEN	1
-#define	    WHITEWHITE	1
+#define	    REDGREEN	1
+//#define	    WHITEWHITE	1
 #define NO_FRONTHOLD    1
 
 //IR Model
