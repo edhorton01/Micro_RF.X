@@ -6,11 +6,13 @@
 #include "si241.h"
 
 extern KEYstateBITS KeyStatus;
-extern LEDControl LEDState[2];
+extern LEDControl LEDState[3];
 extern uint8_t TurnOff;
 extern uint8_t TurnOffBlink;
 extern DIMstateBITS DimB;
+extern BLINKstateBITS BLINKState;
 extern volatile TmrDelay TimerD;
+extern volatile uint8_t rf_failsafe;
 
 /**
   Section: ADC Module APIs
@@ -288,6 +290,21 @@ void TMR0_ISR(void)
     if (TimerD._RF_Active)
     {
         SI241_PwrOn();
+        if (TimerD._finished)
+        {
+            if (!(PORTB & 0x04))
+            {
+                rf_failsafe++;
+                if (rf_failsafe >= 3)
+                {
+                    rf_failsafe = rf_failsafe | 0x40;
+                }
+            }
+            else
+            {
+                rf_failsafe = 0;
+            }
+        }
         if (TimerD._rx_on_pulse)
         {
             TimerD._pulsecnt++;
@@ -361,19 +378,34 @@ void TMR1_ISR(void)
 
     PIR1bits.TMR1IF = 0;
     TMR1_StopTimer();
+    if (BLINKState._onIdle || BLINKState._onForce)
+    {
+        BLINKState._onIdle = 0;
+        BLINKState._onForce = 0;
+        switch (BLINKState._port)
+        {
+        case NO_PORT:
+            break;
+        case PORT_AM:
+            TRISA = TRISA & ~BLINKState._bitmap;
+            break;
+        case PORT_DM:
+            TRISD = TRISD & ~BLINKState._bitmap;
+            break;
+        }
+    }
     if (!TurnOffBlink)
     {
-        //	TRISB = TRISB & 0b11111001;
-        //	TRISD = TRISD & 0b01100110;
-        if (TimerD._RF_Active)
-        {
-            TRISB = TRISB & 0b11111101;
-        }
-        else
-        {
-            TRISB = TRISB & 0b11111000;
-        }
-        TRISD = TRISD & 0b01110011;
+        TRISA = TRISA & ~LEDState[0]._tris_a_contrib;
+        TRISD = TRISD & ~LEDState[0]._tris_d_contrib & ~LEDState[2]._tris_d_contrib;
+    }
+    if (TimerD._RF_Active)
+    {
+        TRISB = TRISB & 0b11111101;
+    }
+    else
+    {
+        TRISB = TRISB & 0b11111000;
     }
 }
 
@@ -426,22 +458,13 @@ void TMR3_ISR(void)
 {
     PIR2bits.TMR3IF = 0;
     TMR3_StopTimer();
-    //    if (LEDState[0]._active && (LEDState[0]._button == 4) && (LEDState[0]._button_press == 1))
-    //    {
-    if (!DimB._MaxOutF && !DimB._MaxOutWL)
-    {
-        //	TRISB = TRISB & 0b11111110;
-        TRISB = TRISB & 0b11111111;
-    }
-    //    }
-    //    else
-    //    {
-    //	TRISB = TRISB & 0b11111010;
-    //    }
     if (!TurnOffBlink)
     {
-        //	TRISD = TRISD & 0b10011001;
-        TRISD = TRISD & 0b10001100;
+        if (!DimB._MaxOutF && !DimB._MaxOutWL)
+        {
+            TRISA = TRISA & ~LEDState[1]._tris_a_contrib;
+            TRISD = TRISD & ~LEDState[1]._tris_d_contrib;
+        }
     }
 }
 

@@ -40,13 +40,13 @@
 
 #define Payload_len     0x02
 #define Payload_len_pair     0x07
-#define si24_on_timer_val   600    // 600 * 0.1 Sec * 10 Minutes
+#define si24_on_timer_val   36000    // 36000 * 0.1 Sec = 60 Minutes
+//#define si24_on_timer_val   600      // 600 * 0.1 Sec = 1 Minutes for test
 
 void SI241_PwrOn(void);
-void SI241_PwrOff(void);
+void SI241_PwrOff(uint8_t force);
 void SI241_Interrupt(void);
 
-void SI241_PwrOff(void);
 void SI241_SetupRx(void);
 void SI241_SetRx(void);
 void SI241_ClearRx(void);
@@ -58,6 +58,7 @@ void SI241_RX0_ClearInt(void);
 void SI241_SaveRxAddress(void);
 void SI241_SetuptxResp(void);
 void SI241_SetTxResp(void);
+void SI241_ClearRxFifo(void);
 
 uint8_t SI241_Status(void);
 uint8_t SI241_RX0_BC(void);

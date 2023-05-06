@@ -67,6 +67,7 @@ extern "C" {
     } KEYstateBITS;
 
     typedef struct {
+        uint8_t _two_press_cnt;
         uint8_t _DB_cnt;
         uint8_t _bounce;
         uint8_t _cmd;
@@ -85,6 +86,7 @@ extern "C" {
                 unsigned _new_cmd : 1;
                 unsigned _pair_mode : 1;
                 unsigned _pair_active : 1;
+                unsigned _just_paired : 1;
             };
         };
     } RF_Cmd;

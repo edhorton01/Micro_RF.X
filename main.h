@@ -5,6 +5,39 @@
  * Created on February 18, 2017, 4:33 PM
  */
 
+// STANDARD so use NORMAL_VER for th1s group
+//#define     NORMAL_VER 1
+//#define     NO_FRONTHOLD    1
+//#define	    AMAZON_VER 1
+//#define	    WHITEYELLOW	1
+//#define	    WHITEWHITE 1
+//#define	    WHITEORANGE	1
+//#define	    WHITEGREEN 1
+
+// NORMAL BEACON so use NORMAL_VER for th1s group
+//#define     NORMAL_VER 1
+//#define	    YELLOWYELLOW 1
+//#define	    GREENGREEN 1
+//#define	    REDRED 1
+//#define	    ORANGEORANGE 1
+
+//Nav light so use NAVLIGHT_VER for th1s group
+
+#define	    NAVLIGHT_VER 1
+//#define	    REDGREEN	1
+#define	    WHITEWHITE	1
+#define NO_FRONTHOLD    1
+
+//IR Model
+//#define     NORMAL_VER 1
+//#define	    ALLIR_VER
+//#define	    IR_LED 1
+
+//IR German Hybrid
+//#define     GERMAN_VER 1
+//#define	    IRGREEN	1
+
+
 #ifndef MAIN_H
 #define	MAIN_H
 

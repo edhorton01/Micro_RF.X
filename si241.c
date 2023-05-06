@@ -6,9 +6,6 @@
 #include "spi1.h"
 #include "main.h"
 
-#define	    REDGREEN 1
-//#define	    WHITEWHITE 1
-
 extern uint8_t SPI_Bout[16];
 extern uint8_t SPI_Bin[16];
 extern uint8_t RX_Payload[16];
@@ -22,6 +19,8 @@ extern uint16_t si24_on_timer;
 
 extern uint8_t Serial_buffer[8];
 extern RF_Cmd rf_action;
+extern uint8_t remote_pair;
+extern uint8_t remote_model;
 
 extern volatile TmrDelay TimerD;
 extern volatile uint8_t Si24_Status;
@@ -71,9 +70,9 @@ void SI241_PwrOn(void)
      */
 }
 
-void SI241_PwrOff(void)
+void SI241_PwrOff(uint8_t force)
 {
-    if (IO_RC6_GetValue())
+    if (IO_RC6_GetValue() || force)
     {
         IO_RC6_SetLow();
         RC2_SetDigitalOutput();
@@ -195,7 +194,7 @@ void SI241_SetRx(void)
 
 void SI241_ClearRx(void)
 {
-    Si24_Status = 0x80;
+    Si24_Status = 0x20;
     TimerD._new_rx = 0;
     RA2_SetLow(); // CE
 }
@@ -313,6 +312,15 @@ void SI241_SetStandby(void)
     IO_RA3_SetHigh(); // CSN high
 }
 
+void SI241_ClearRxFifo(void)
+{
+    SPI_Bout[0] = FLUSH_RX;
+    SPI_Bout[0] = SPI_Bout[0] | W_REGISTER;
+    IO_RA3_SetLow(); // CSN low
+    SPI1_WriteBlock(SPI_Bout, 1);
+    IO_RA3_SetHigh(); // CSN high
+}
+
 uint8_t SI241_Status(void)
 {
     uint8_t work;
@@ -381,6 +389,7 @@ void SI241_LoadRxAddress(void)
         RX_Address[4] = 0x00;
         RX_Address[5] = 0x01;
         RX_Channel = 0x40;
+        remote_pair = 0x01;
     }
 
     else
@@ -388,7 +397,7 @@ void SI241_LoadRxAddress(void)
         i = 0;
         c1 = 0;
         c2 = 0;
-        while (i < 6)
+        while (i < 7)
         {
             j = i + 8;
             t1 = EEPROM_Read(i);
@@ -396,14 +405,19 @@ void SI241_LoadRxAddress(void)
             i++;
             if (t1 == t2)
             {
-                if (i != 6)
+                if (i < 6)
                 {
                     RX_Address[i] = t1;
                 }
-                else
+                else if (i == 6)
                 {
                     RX_Channel = t1;
                 }
+                else if (i == 7)
+                {
+                    remote_model = t1;
+                }
+
             }
             else
             {
@@ -414,7 +428,7 @@ void SI241_LoadRxAddress(void)
         if (c1)
         {
             i = 16;
-            while (i < 22)
+            while (i < 23)
             {
                 j = i + 8;
                 t1 = EEPROM_Read(i);
@@ -422,13 +436,17 @@ void SI241_LoadRxAddress(void)
                 i++;
                 if (t1 == t2)
                 {
-                    if (i != 22)
+                    if (i < 22)
                     {
                         RX_Address[i - 16] = t1;
                     }
-                    else
+                    else if (i == 22)
                     {
                         RX_Channel = t1;
+                    }
+                    else if (i == 23)
+                    {
+                        remote_model = t1;
                     }
                 }
                 else
@@ -446,14 +464,27 @@ void SI241_LoadRxAddress(void)
             RX_Address[4] = 0x00;
             RX_Address[5] = 0x01;
             RX_Channel = 0x40;
+            remote_pair = 0;
         }
         else
         {
-#ifdef REDGREEN
+            remote_pair = 0x80;
+
+#ifdef  NAVLIGHT_VER
+#ifdef  REDGREEN
             RX_Address[1] = RX_Address[1] & 0x7f;
-#else
+#elif   WHITEWHITE
             RX_Address[1] = RX_Address[1] | 0x80;
 #endif
+            remote_model = 0;
+#else
+            RX_Address[1] = RX_Address[1] & 0x7f;
+            if (remote_model == 0x80)
+            {
+                RX_Address[1] = RX_Address[1] | remote_model;
+            }
+#endif
+
         }
     }
 }
@@ -485,6 +516,10 @@ void SI241_SaveRxAddress(void)
         else if (i == 5)
         {
             t1 = 0x40;
+        }
+        else if (i == 6)
+        {
+            t1 = remote_model;
         }
         else
         {
