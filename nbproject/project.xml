@@ -3,7 +3,7 @@
     <type>com.microchip.mplab.nbide.embedded.makeproject</type>
     <configuration>
         <data xmlns="http://www.netbeans.org/ns/make-project/1">
-            <name>Micro_RF</name>
+            <name>Micro_RF_V2</name>
             <creation-uuid>4c99c3e1-9236-4836-bb42-4bcde25f6483</creation-uuid>
             <make-project-type>0</make-project-type>
             <c-extensions>c</c-extensions>
