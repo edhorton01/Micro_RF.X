@@ -21,6 +21,9 @@ extern uint8_t Serial_buffer[8];
 extern RF_Cmd rf_action;
 extern uint8_t remote_pair;
 extern uint8_t remote_model;
+extern uint8_t fcc_test;
+extern uint8_t fcc_power;
+extern uint8_t fcc_channel;
 
 extern volatile TmrDelay TimerD;
 extern volatile uint8_t Si24_Status;
@@ -266,14 +269,40 @@ void SI241_SetuptxResp(void)
 
     SPI_Bout[0] = RF_CH;
     SPI_Bout[0] = SPI_Bout[0] | W_REGISTER;
+
+#ifdef FCC_MODE
+    if (fcc_test & 0x80)
+    {
+        SPI_Bout[1] = fcc_channel;
+    }
+    else
+    {
+        SPI_Bout[1] = RX_Channel;
+    }
+#else
     SPI_Bout[1] = RX_Channel;
+#endif
+
     IO_RA3_SetLow(); // CSN low
     SPI1_WriteBlock(SPI_Bout, 2);
     IO_RA3_SetHigh(); // CSN high
 
     SPI_Bout[0] = RF_SETUP;
     SPI_Bout[0] = SPI_Bout[0] | W_REGISTER;
+
+#ifdef FCC_MODE
+    if (fcc_test == 0x81)
+    {
+        SPI_Bout[1] = 0x80 | fcc_power;
+    }
+    else
+    {
+        SPI_Bout[1] = 0x0e;
+    }
+#else
     SPI_Bout[1] = 0x0e;
+#endif
+
     IO_RA3_SetLow(); // CSN low
     SPI1_WriteBlock(SPI_Bout, 2);
     IO_RA3_SetHigh(); // CSN high
@@ -286,11 +315,19 @@ void SI241_SetuptxResp(void)
     IO_RA3_SetHigh(); // CSN high
 
     IO_RA3_SetLow(); // CSN low
-    SPI1_ReadBlockCmd(SPI_Bin, 5, 0x0a); // RX_ADDR_P0
+    SPI1_ReadBlockCmd(SPI_Bin, 3, 0x05); // RX Channel
     IO_RA3_SetHigh(); // CSN high
     Nop();
     Nop();
     Nop();
+
+    IO_RA3_SetLow(); // CSN low
+    SPI1_ReadBlockCmd(SPI_Bin, 3, 0x06); // RX Channel
+    IO_RA3_SetHigh(); // CSN high
+    Nop();
+    Nop();
+    Nop();
+
 }
 
 void SI241_SetTxResp(void)

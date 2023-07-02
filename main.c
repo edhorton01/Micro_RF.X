@@ -107,6 +107,10 @@ uint8_t rx_rssi;
 RF_Cmd rf_action;
 uint8_t remote_pair;
 uint8_t remote_model;
+uint8_t fcc_test;
+uint8_t fcc_power;
+uint8_t fcc_channel;
+
 volatile uint8_t rf_failsafe;
 
 extern const unsigned char userID[8] @ 0x200000;
@@ -511,68 +515,66 @@ const uint16_t Led_B4P3[] = {
 };
 
 const uint16_t Led_B7P1[] = {
-    0x0036, 0x0010, 0x0001,
-    0x0082, 0x0010, 0x0001,
-    0x0082, 0x0010, 0x0001,
-    0x0082, 0x0010, 0x0001,
-    0x0082, 0x0010, 0x0001,
+    0x0036, 0x0008, 0x0001,
+    0x0082, 0x0008, 0x0001,
+    0x0082, 0x0008, 0x0001,
+    0x0082, 0x0008, 0x0001,
+    0x0082, 0x0008, 0x0001,
     0x0081, 0x0000, 0x0000, 0x0081, 0x0000, 0x0000
 };
 const uint16_t Led_B7P2[] = {
-    0x0036, 0x0010, 0x0001,
-    0x0036, 0x0018, 0x0002,
-    0x0082, 0x0018, 0x0002,
-    0x0082, 0x0018, 0x0002,
-    0x0082, 0x0018, 0x0002,
-    0x0082, 0x0018, 0x0002,
+    0x0036, 0x0008, 0x0001,
+    0x0036, 0x000c, 0x0002,
+    0x0082, 0x000c, 0x0002,
+    0x0082, 0x000c, 0x0002,
+    0x0082, 0x000c, 0x0002,
+    0x0082, 0x000c, 0x0002,
     0x0081, 0x0000, 0x0002, 0x0081, 0x0000, 0x0002
     //    0x0081, 0x0000, 0x0000, 0x0081, 0x0000, 0x0000, 0x0081, 0x0000, 0x0000, 0x0081, 0x0000, 0x0000, 0x0081, 0x0000, 0x0000
 };
 const uint16_t Led_B7P3[] = {
-    0x0036, 0x0010, 0x0001,
-    0x0036, 0x0018, 0x0002,
-    0x0036, 0x001C, 0x0003,
-    0x0082, 0x001C, 0x0003,
-    0x0082, 0x001C, 0x0003,
-    0x0082, 0x001C, 0x0003,
-    0x0082, 0x001C, 0x0003,
+    0x0036, 0x0008, 0x0001,
+    0x0036, 0x000c, 0x0002,
+    0x0036, 0x000e, 0x0003,
+    0x0082, 0x000e, 0x0003,
+    0x0082, 0x000e, 0x0003,
+    0x0082, 0x000e, 0x0003,
+    0x0082, 0x000e, 0x0003,
     0x0081, 0x0000, 0x0002, 0x0081, 0x0000, 0x0002
     //    0x0081, 0x0000, 0x0000, 0x0081, 0x0000, 0x0000, 0x0081, 0x0000, 0x0000, 0x0081, 0x0000, 0x0000
 };
 const uint16_t Led_B8P1[] = {
-    0x0036, 0x0010, 0x0001,
-    0x0036, 0x0018, 0x0002,
-    0x0036, 0x001C, 0x0003,
-    0x0036, 0x001E, 0x0004,
-    0x0082, 0x001E, 0x0004,
-    0x0082, 0x001E, 0x0004,
-    0x0082, 0x001E, 0x0004,
-    0x0082, 0x001E, 0x0004,
+    0x0036, 0x0008, 0x0001,
+    0x0036, 0x000c, 0x0002,
+    0x0036, 0x000e, 0x0003,
+    0x0036, 0x000f, 0x0004,
+    0x0082, 0x000f, 0x0004,
+    0x0082, 0x000f, 0x0004,
+    0x0082, 0x000f, 0x0004,
+    0x0082, 0x000f, 0x0004,
     0x0081, 0x0000, 0x0002, 0x0081, 0x0000, 0x0002
     //    0x0081, 0x0000, 0x0000, 0x0081, 0x0000, 0x0000, 0x0081, 0x0000, 0x0000
 };
 const uint16_t Led_B8P2[] = {
-    0x0036, 0x0010, 0x0001,
-    0x0036, 0x0018, 0x0002,
-    0x0036, 0x001C, 0x0003,
-    0x0036, 0x001E, 0x0004,
-    0x0082, 0x001E, 0x0004,
-    0x0082, 0x001E, 0x0004,
-    0x0082, 0x001E, 0x0004,
-    0x0082, 0x001E, 0x0004,
-    0x0081, 0x0000, 0x0002, 0x0081, 0x0000, 0x0002
+    0x0036, 0x0008, 0x0001,
+    0x0036, 0x000c, 0x0002,
+    0x0036, 0x000e, 0x0003,
+    0x0036, 0x000f, 0x0004,
+    0x0082, 0x000f, 0x0004,
+    0x0082, 0x000f, 0x0004,
+    0x0082, 0x000f, 0x0004,
+    0x0082, 0x000f, 0x0004, 0x0081, 0x0000, 0x0002, 0x0081, 0x0000, 0x0002
     //    0x0081, 0x0000, 0x0000, 0x0081, 0x0000, 0x0000
 };
 const uint16_t Led_B8P3[] = {
-    0x0036, 0x0010, 0x0001,
-    0x0036, 0x0018, 0x0002,
-    0x0036, 0x001C, 0x0003,
-    0x0036, 0x001E, 0x0004,
-    0x0082, 0x001E, 0x0004,
-    0x0082, 0x001E, 0x0004,
-    0x0082, 0x001E, 0x0004,
-    0x0082, 0x001E, 0x0004,
-    0x0081, 0x0000, 0x0002, 0x0081, 0x0000, 0x0002
+    0x0036, 0x0008, 0x0001,
+    0x0036, 0x000c, 0x0002,
+    0x0036, 0x000e, 0x0003,
+    0x0036, 0x000f, 0x0004,
+    0x0082, 0x000f, 0x0004,
+    0x0082, 0x000f, 0x0004,
+    0x0082, 0x000f, 0x0004,
+    0x0082, 0x000f, 0x0004, 0x0081, 0x0000, 0x0002, 0x0081, 0x0000, 0x0002
     //    0x0081, 0x0000, 0x0000, 0x0081, 0x0000, 0x0000
 };
 
@@ -916,6 +918,7 @@ void main(void)
     DoBattery = 0;
     rf_action._int = 0;
     remote_model = 0;
+    fcc_test = 0;
 
     INTCONbits.GIE = 1;
     INTCONbits.PEIE = 1;
@@ -1299,7 +1302,7 @@ void main(void)
         ServiceRFCmd();
 
         OSCCONbits.SCS = 0; // PRI_IDLE
-        if (LEDState[0]._active || LEDState[1]._active || LEDState[2]._active || (PgmStat == 0x81))
+        if (LEDState[0]._active || LEDState[1]._active || LEDState[2]._active || (PgmStat == 0x81) || (fcc_test & 0x80))
         {
             if (PgmStat != 0x81)
             {
@@ -2969,7 +2972,7 @@ void ServiceRFCmd(void)
 void ServiceCmd(void)
 {
     uint16_t* l_pnt, test;
-    uint8_t ind;
+    uint8_t bb, ind, work;
 
     if (KeyStatus._new_cmd)
     {
@@ -3064,7 +3067,11 @@ void ServiceCmd(void)
 
         case 0xf8:
         {
+#ifdef FCC_MODE
+            if (!DimB._German_IR && !(fcc_test & 0x80))
+#else
             if (!DimB._German_IR)
+#endif
             {
                 DimB._IR_Mode = 0;
                 DimB._Cust_Mode = 0;
@@ -3140,11 +3147,50 @@ void ServiceCmd(void)
                     init_button((uint8_t) 2, (uint8_t) 1);
                 }
             }
+#ifdef FCC_MODE
+            if (fcc_test & 0x80)
+            {
+                if (fcc_power > 0)
+                {
+                    fcc_power--;
+                    ;
+                }
+                if (fcc_test & 0x01)
+                {
+                    fcc_test = 0x80;
+                    SI241_SetuptxResp();
+                    SI241_SetStandby();
+                    fcc_test = 0x81;
+
+                    si24_on_timer = 50; // set to 50 * 0.001 = to use as delay
+                    fcc_channel = 0x40;
+                    SI241_SetuptxResp();
+                    SI241_SetTxResp();
+                }
+
+                bb = 5;
+                work = fcc_power / 2;
+                if (work >= 0x3)
+                {
+                    bb++;
+                    work = work - 3;
+                }
+                DimB_Hold = DimB;
+                DimB._Bat_Status = 1;
+                ForceButton = work | 0x80;
+                init_button((uint8_t) bb, (uint8_t) 1);
+            }
+#endif
             break;
         }
+
         case 0xdc:
         {
+#ifdef FCC_MODE
+            if (!DimB._German_IR && !(fcc_test & 0x80))
+#else
             if (!DimB._German_IR)
+#endif
             {
                 DimB._IR_Mode = 0;
                 DimB._Cust_Mode = 0;
@@ -3215,6 +3261,40 @@ void ServiceCmd(void)
                     init_button((uint8_t) 1, (uint8_t) 0);
                 }
             }
+#ifdef FCC_MODE
+            if (fcc_test & 0x80)
+            {
+                fcc_power++;
+                if (fcc_power >= 0x07)
+                {
+                    fcc_power = 0x07;
+                }
+                if (fcc_test & 0x01)
+                {
+                    fcc_test = 0x80;
+                    SI241_SetuptxResp();
+                    SI241_SetStandby();
+                    fcc_test = 0x81;
+
+                    si24_on_timer = 50; // set to 50 * 0.001 = to use as delay
+                    fcc_channel = 0x40;
+                    SI241_SetuptxResp();
+                    SI241_SetTxResp();
+                }
+
+                bb = 5;
+                work = fcc_power / 2;
+                if (work >= 0x3)
+                {
+                    bb++;
+                    work = work - 3;
+                }
+                DimB_Hold = DimB;
+                DimB._Bat_Status = 1;
+                ForceButton = work | 0x80;
+                init_button((uint8_t) bb, (uint8_t) 1);
+            }
+#endif
             break;
         }
         case 0x7c: // GA Button Handler
@@ -3367,6 +3447,46 @@ void ServiceCmd(void)
 #endif
 #endif
             }
+
+#ifdef FCC_MODE
+            if (fcc_test == 0x80)
+            {
+                IO_RB0_SetDigitalInput(); // Set MISO as INPUT
+                IO_RB2_SetDigitalInput(); // Set IRQ to input
+                SPI1_Initialize(); // Enable SPI after power up
+                INTCON3bits.INT2IF = 0; // Enable INT from RF chip to Ext Int 2 : Clear Flag
+                INTCON2bits.INTEDG2 = 0; // Set to falling edge
+                INTCON3bits.INT2IE = 1; // Enable
+                SSP1CON1bits.SSPEN = 1;
+
+                SI241_ClearRxFifo();
+                SI241_SetStandby();
+                si24_on_timer = 50; // set to 50 * 0.001 = to use as delay
+                while (si24_on_timer > 0)
+                {
+                    if (TimerD._window)
+                    {
+                        Nop();
+                        Nop();
+                        Nop();
+                        TimerD._window = 0;
+                        si24_on_timer--;
+                    }
+                }
+                fcc_channel = 0x40;
+                SI241_SetuptxResp();
+                SI241_SetTxResp();
+                while (!TimerD._new_tx)
+                {
+                    Nop();
+                    Nop();
+                    Nop();
+                }
+
+                TimerD._new_tx = 0;
+                SI241_SetStandby();
+            }
+#endif
             break;
         }
 
@@ -3463,7 +3583,11 @@ void ServiceCmd(void)
                     LEDState[0]._active = 0;
                     LEDState[1]._active = 0;
                 }
+#ifdef FCC_MODE
+                else if ((PgmStat != 0x81) && (fcc_test == 0))
+#else
                 else if (PgmStat != 0x81)
+#endif
                 {
                     WL_hold = 0x80;
                     WL_hold_cnt = 0;
@@ -3497,6 +3621,50 @@ void ServiceCmd(void)
                     RestoreNavDim();
                     init_button((uint8_t) 4, (uint8_t) 0);
                 }
+#ifdef FCC_MODE
+                if ((PgmStat == 0x81) || (fcc_test & 0x80))
+                {
+                    PgmStat = 0;
+                    if (!(fcc_test & 0x01))
+                    {
+                        fcc_test = 0x81;
+                        clean_up();
+                        LEDState[0]._active = 0;
+                        LEDState[1]._active = 0;
+                        LEDState[2]._active = 0;
+                        ForceButton = 0x81;
+                        init_button((uint8_t) 10, (uint8_t) 2);
+                        SI241_ClearRxFifo();
+                        SI241_SetStandby();
+                        si24_on_timer = 50; // set to 50 * 0.001 = to use as delay
+                        while (si24_on_timer > 0)
+                        {
+                            if (TimerD._window)
+                            {
+                                Nop();
+                                Nop();
+                                Nop();
+                                TimerD._window = 0;
+                                si24_on_timer--;
+                            }
+                        }
+                        fcc_power = 0;
+                        fcc_channel = 0x40;
+                        SI241_SetuptxResp();
+                        SI241_SetTxResp();
+                    }
+                    else
+                    {
+                        fcc_test = 0x80;
+                        clean_up();
+                        LEDState[0]._active = 0;
+                        LEDState[1]._active = 0;
+                        LEDState[2]._active = 0;
+                        SI241_SetuptxResp();
+                        SI241_SetStandby();
+                    }
+                }
+#endif
             }
             break;
         }
