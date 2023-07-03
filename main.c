@@ -3451,40 +3451,44 @@ void ServiceCmd(void)
 #ifdef FCC_MODE
             if (fcc_test == 0x80)
             {
-                IO_RB0_SetDigitalInput(); // Set MISO as INPUT
-                IO_RB2_SetDigitalInput(); // Set IRQ to input
-                SPI1_Initialize(); // Enable SPI after power up
-                INTCON3bits.INT2IF = 0; // Enable INT from RF chip to Ext Int 2 : Clear Flag
-                INTCON2bits.INTEDG2 = 0; // Set to falling edge
-                INTCON3bits.INT2IE = 1; // Enable
-                SSP1CON1bits.SSPEN = 1;
-
-                SI241_ClearRxFifo();
-                SI241_SetStandby();
-                si24_on_timer = 50; // set to 50 * 0.001 = to use as delay
-                while (si24_on_timer > 0)
+                if ((LEDState[0]._button == 8) && (LEDState[1]._button == 9))
                 {
-                    if (TimerD._window)
+                    IO_RB0_SetDigitalInput(); // Set MISO as INPUT
+                    IO_RB2_SetDigitalInput(); // Set IRQ to input
+                    SPI1_Initialize(); // Enable SPI after power up
+                    INTCON3bits.INT2IF = 0; // Enable INT from RF chip to Ext Int 2 : Clear Flag
+                    INTCON2bits.INTEDG2 = 0; // Set to falling edge
+                    INTCON3bits.INT2IE = 1; // Enable
+                    SSP1CON1bits.SSPEN = 1;
+
+                    SI241_ClearRxFifo();
+                    SI241_SetStandby();
+                    si24_on_timer = 50; // set to 50 * 0.001 = to use as delay
+                    INTCONbits.TMR0IF = 0;
+                    while (si24_on_timer > 0)
+                    {
+                        if (TimerD._window)
+                        {
+                            Nop();
+                            Nop();
+                            Nop();
+                            TimerD._window = 0;
+                            si24_on_timer--;
+                        }
+                    }
+                    fcc_channel = 0x40;
+                    SI241_SetuptxResp();
+                    SI241_SetTxResp();
+                    while (!TimerD._new_tx)
                     {
                         Nop();
                         Nop();
                         Nop();
-                        TimerD._window = 0;
-                        si24_on_timer--;
                     }
-                }
-                fcc_channel = 0x40;
-                SI241_SetuptxResp();
-                SI241_SetTxResp();
-                while (!TimerD._new_tx)
-                {
-                    Nop();
-                    Nop();
-                    Nop();
-                }
 
-                TimerD._new_tx = 0;
-                SI241_SetStandby();
+                    TimerD._new_tx = 0;
+                    SI241_SetStandby();
+                }
             }
 #endif
             break;
@@ -3637,6 +3641,7 @@ void ServiceCmd(void)
                         SI241_ClearRxFifo();
                         SI241_SetStandby();
                         si24_on_timer = 50; // set to 50 * 0.001 = to use as delay
+                        INTCONbits.TMR0IF = 0;
                         while (si24_on_timer > 0)
                         {
                             if (TimerD._window)
