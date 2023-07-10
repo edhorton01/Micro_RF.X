@@ -5,7 +5,7 @@
  * Created on February 18, 2017, 4:33 PM
  */
 
-#define	    FCC_MODE 1
+//#define	    FCC_MODE 1
 
 // STANDARD so use NORMAL_VER for th1s group
 //#define     NORMAL_VER 1
@@ -26,8 +26,8 @@
 //Nav light so use NAVLIGHT_VER for th1s group
 
 #define	    NAVLIGHT_VER 1
-#define	    REDGREEN	1
-//#define	    WHITEWHITE	1
+//#define	    REDGREEN	1
+#define	    WHITEWHITE	1
 #define NO_FRONTHOLD    1
 
 //IR Model

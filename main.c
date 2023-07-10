@@ -629,7 +629,7 @@ const uint16_t Led_B11P3[] = {
 };
 #elif WHITEWHITE
 const uint16_t Led_B10P1[] = {
-    0x0000, 0x0360, 0x0004
+    0x0000, 0x01e0, 0x0004
 };
 const uint16_t Led_B10P2[] = {
     0x0000, 0x0000, 0x0000
@@ -638,7 +638,7 @@ const uint16_t Led_B10P3[] = {
     0x0000, 0x0000, 0x0000
 };
 const uint16_t Led_B11P1[] = {
-    0x0000, 0x001F, 0x0005
+    0x0000, 0x000F, 0x0004
 };
 const uint16_t Led_B11P2[] = {
     0x0000, 0x0000, 0x0000
@@ -975,6 +975,9 @@ void main(void)
         }
     }
 
+    INTCONbits.TMR0IF = 0;
+    TMR0H = 0xF4; // load 3000 to give imSec period
+    TMR0L = 0x4c;
     INTCONbits.TMR0IE = 1;
     INTCONbits.GIE = 0;
     INTCONbits.PEIE = 0;
@@ -1521,7 +1524,15 @@ void ServiceKeyPress(void)
                     Key._two_press_cnt = 0;
                     if (LEDState[0]._active || LEDState[1]._active || LEDState[2]._active || TimerD._RF_Active)
                     {
-                        Key._DB_cnt = debounce;
+                        if (OSCCONbits.IRCF != 0x02)
+                        {
+                            Key._DB_cnt = debounce;
+                        }
+                        else
+                        {
+                            Key._DB_cnt = debounce_idle;
+
+                        }
                     }
                     else
                     {
