@@ -18,6 +18,7 @@
 
 // NORMAL BEACON so use NORMAL_VER for th1s group
 //#define     NORMAL_VER 1
+//#define NO_FRONTHOLD    1
 //#define	    YELLOWYELLOW 1
 //#define	    GREENGREEN 1
 //#define	    REDRED 1
