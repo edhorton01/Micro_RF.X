@@ -390,7 +390,19 @@ void TMR1_ISR(void)
             TRISA = TRISA & ~BLINKState._bitmap;
             break;
         case PORT_DM:
+#ifdef STANDARD
+            if (BLINKState._bitmap == 0x40)
+            {
+                TRISD = TRISD & ~0x04;
+                TRISA = TRISA & ~0x20;
+            }
+            else
+            {
+                TRISD = TRISD & ~BLINKState._bitmap;
+            }
+#else            
             TRISD = TRISD & ~BLINKState._bitmap;
+#endif
             break;
         }
     }
@@ -462,8 +474,22 @@ void TMR3_ISR(void)
     {
         if (!DimB._MaxOutF && !DimB._MaxOutWL)
         {
-            TRISA = TRISA & ~LEDState[1]._tris_a_contrib;
-            TRISD = TRISD & ~LEDState[1]._tris_d_contrib;
+            if (LEDState[1]._active && !LEDState[0]._active)
+            {
+                TRISA = TRISA & ~LEDState[1]._tris_a_contrib;
+                TRISD = TRISD & ~LEDState[1]._tris_d_contrib;
+            }
+            else if (LEDState[0]._active && !LEDState[1]._active && !T1CONbits.TMR1ON)
+            {
+                TRISA = TRISA & ~LEDState[0]._tris_a_contrib;
+                TRISD = TRISD & ~LEDState[0]._tris_d_contrib;
+            }
+            else
+            {
+                TRISA = TRISA & ~LEDState[1]._tris_a_contrib;
+                TRISD = TRISD & ~LEDState[1]._tris_d_contrib;
+            }
+
         }
     }
 }

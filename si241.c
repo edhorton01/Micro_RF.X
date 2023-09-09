@@ -19,8 +19,9 @@ extern uint16_t si24_on_timer;
 
 extern uint8_t Serial_buffer[8];
 extern RF_Cmd rf_action;
-extern uint8_t remote_pair;
-extern uint8_t remote_model;
+extern uint8_t remote_paired;
+extern uint8_t remote_group;
+extern uint8_t remote_type;
 extern uint8_t fcc_test;
 extern uint8_t fcc_power;
 extern uint8_t fcc_channel;
@@ -426,7 +427,7 @@ void SI241_LoadRxAddress(void)
         RX_Address[4] = 0x00;
         RX_Address[5] = 0x01;
         RX_Channel = 0x40;
-        remote_pair = 0x01;
+        remote_paired = 0x01;
     }
 
     else
@@ -434,7 +435,7 @@ void SI241_LoadRxAddress(void)
         i = 0;
         c1 = 0;
         c2 = 0;
-        while (i < 7)
+        while (i < 8)
         {
             j = i + 8;
             t1 = EEPROM_Read(i);
@@ -452,7 +453,15 @@ void SI241_LoadRxAddress(void)
                 }
                 else if (i == 7)
                 {
-                    remote_model = t1;
+                    remote_group = t1;
+                }
+                else if (i == 8)
+                {
+#ifdef NON_RF
+                    remote_type = 0x11;
+#else
+                    remote_type = t1;
+#endif
                 }
 
             }
@@ -465,7 +474,7 @@ void SI241_LoadRxAddress(void)
         if (c1)
         {
             i = 16;
-            while (i < 23)
+            while (i < 24)
             {
                 j = i + 8;
                 t1 = EEPROM_Read(i);
@@ -483,8 +492,17 @@ void SI241_LoadRxAddress(void)
                     }
                     else if (i == 23)
                     {
-                        remote_model = t1;
+                        remote_group = t1;
                     }
+                    else if (i == 24)
+                    {
+#ifdef NON_RF
+                        remote_type = 0x11;
+#else
+                        remote_type = t1;
+#endif
+                    }
+
                 }
                 else
                 {
@@ -501,27 +519,57 @@ void SI241_LoadRxAddress(void)
             RX_Address[4] = 0x00;
             RX_Address[5] = 0x01;
             RX_Channel = 0x40;
-            remote_pair = 0;
+            remote_paired = 0;
         }
         else
         {
-            remote_pair = 0x80;
-
-#ifdef  NAVLIGHT_VER
-#ifdef  REDGREEN
-            RX_Address[1] = RX_Address[1] & 0x7f;
-#elif   WHITEWHITE
-            RX_Address[1] = RX_Address[1] | 0x80;
-#endif
-            remote_model = 0;
-#else
-            RX_Address[1] = RX_Address[1] & 0x7f;
-            if (remote_model == 0x80)
+            remote_paired = 0x80;
+            if (remote_type == 0x11)
             {
-                RX_Address[1] = RX_Address[1] | remote_model;
-            }
+#ifdef  REDGREEN
+                RX_Address[1] = RX_Address[1] & 0x7f;
+#elif   WHITEWHITE
+                RX_Address[1] = RX_Address[1] | 0x80;
+#else
+                RX_Address[1] = RX_Address[1] & 0x7f;
+                if (remote_group == 0x80)
+                {
+                    RX_Address[1] = RX_Address[1] | remote_group;
+                }
 #endif
-
+            }
+            else
+            {
+                RX_Address[1] = RX_Address[1] & 0x7f;
+                if (remote_group == 0x80)
+                {
+                    RX_Address[1] = RX_Address[1] | remote_group;
+                }
+            }
+            /*
+            #ifdef  NAVLIGHT_VER
+            #ifdef  REDGREEN
+                        RX_Address[1] = RX_Address[1] & 0x7f;
+            #elif   WHITEWHITE
+                        RX_Address[1] = RX_Address[1] | 0x80;
+            #endif
+                        remote_model = 0;
+            #else
+                        RX_Address[1] = RX_Address[1] & 0x7f;
+                        if (remote_model == 0x80)
+                        {
+                            RX_Address[1] = RX_Address[1] | remote_model;
+                        }
+            #endif
+             */
+#ifdef NON_RF
+            remote_paired = 0;
+#ifdef FORCE_NAVLIGHT
+            remote_type = 0x11;
+#else
+            remote_type = 0;
+#endif
+#endif
         }
     }
 }
@@ -556,7 +604,11 @@ void SI241_SaveRxAddress(void)
         }
         else if (i == 6)
         {
-            t1 = remote_model;
+            t1 = remote_group;
+        }
+        else if (i == 7)
+        {
+            t1 = ~RX_Payload[0];
         }
         else
         {

@@ -6,33 +6,39 @@
  */
 
 //#define	    FCC_MODE 1
+#define     NO_FRONTHOLD    1
 
 // STANDARD so use NORMAL_VER for th1s group
-//#define     NORMAL_VER 1
-//#define     NO_FRONTHOLD    1
+#define     STANDARD 1
+//#define	    NON_RF      1
+//#define       NORMAL_VER 1
 //#define	    AMAZON_VER 1
-//#define	    WHITEYELLOW	1
-//#define	    WHITEWHITE 1
+//#define       WHITEGREEN 1
 //#define	    WHITEORANGE	1
-//#define	    WHITEGREEN 1
+//#define	    WHITERED 1
+#define       WHITEWHITE	1
+//#define	    WHITEYELLOW	1
 
 // NORMAL BEACON so use NORMAL_VER for th1s group
 //#define     NORMAL_VER 1
-//#define NO_FRONTHOLD    1
-//#define	    YELLOWYELLOW 1
+//#define	    NON_RF      1
 //#define	    GREENGREEN 1
-//#define	    REDRED 1
 //#define	    ORANGEORANGE 1
+//#define	    REDGREEN	1
+//#define	    REDRED 1
+//#define	    YELLOWYELLOW 1
 
 //Nav light so use NAVLIGHT_VER for th1s group
-
 #define	    NAVLIGHT_VER 1
+//#define	    NON_RF      1
+//#define	    FORCE_NAVLIGHT 1
 //#define	    REDGREEN	1
-#define	    WHITEWHITE	1
-#define NO_FRONTHOLD    1
+//#define     STANDARD 1
+//#define     WHITEWHITE	1
 
 //IR Model
-//#define     NORMAL_VER 1
+//#define	    NON_RF      1
+//#define       NORMAL_VER 1
 //#define	    ALLIR_VER
 //#define	    IR_LED 1
 
