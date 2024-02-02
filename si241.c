@@ -162,7 +162,7 @@ void SI241_SetupRx(void)
 
     SPI_Bout[0] = RF_SETUP;
     SPI_Bout[0] = SPI_Bout[0] | W_REGISTER;
-    SPI_Bout[1] = 0x0e;
+    SPI_Bout[1] = 0x0d;
     IO_RA3_SetLow(); // CSN low
     SPI1_WriteBlock(SPI_Bout, 2);
     IO_RA3_SetHigh(); // CSN high
@@ -301,7 +301,7 @@ void SI241_SetuptxResp(void)
         SPI_Bout[1] = 0x0e;
     }
 #else
-    SPI_Bout[1] = 0x0e;
+    SPI_Bout[1] = 0x0d;
 #endif
 
     IO_RA3_SetLow(); // CSN low
@@ -621,6 +621,19 @@ void SI241_SaveRxAddress(void)
 
         EEPROM_Write(j, t2);
         EEPROM_Write((j + 0x10), t2);
+        i++;
+    }
+}
+
+void SI241_ClearRxAddress(void)
+{
+    uint8_t i, t1;
+
+    i = 0;
+    t1 = 0xff;
+    while (i < 32)
+    {
+        EEPROM_Write(i, t1);
         i++;
     }
 }

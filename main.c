@@ -108,6 +108,8 @@ RF_Cmd rf_action;
 uint8_t remote_paired;
 uint8_t remote_group;
 uint8_t remote_type;
+uint8_t pending_clr;
+
 uint8_t fcc_test;
 uint8_t fcc_power;
 uint8_t fcc_channel;
@@ -938,6 +940,7 @@ void main(void)
     DoBattery = 0;
     rf_action._int = 0;
     remote_group = 0;
+    pending_clr = 0;
 #ifdef NON_RF
 #ifdef FORCE_NAVLIGHT
     remote_type = 0x11;
@@ -1043,11 +1046,10 @@ void main(void)
     if (!Charge)
     {
 #ifdef	    ALLIR_VER
-        WL_hold = 0x42;
-        init_button((uint8_t) 4, (uint8_t) 0); // start out of sleep with top light on
-        WL_hold = 0;
+        init_button((uint8_t) 10, (uint8_t) 2);
 #else
         init_button((uint8_t) 4, (uint8_t) 0); // start out of sleep with work light on
+#endif
         remote_paired = 0;
         SI241_LoadRxAddress();
         TimerD._flags = 0; // init flag
@@ -1055,7 +1057,6 @@ void main(void)
         {
             TimerD._RF_Active = 1; // Enable RF
         }
-#endif
     }
     // If using interrupts in PIC18 High/Low Priority Mode you need to enable the Global High and Low Interrupts
     // If using interrupts in PIC Mid-Range Compatibility Mode you need to enable the Global and Peripheral Interrupts
@@ -1322,7 +1323,7 @@ void main(void)
                             SI241_PwrOn();
                             rf_action._pair_mode = 0;
                             rf_action._pair_active = 0;
-                            si24_on_timer = si24_on_timer_val; // 10 Minutes
+                            si24_on_timer = si24_on_timer_val; // 1 hour
                         }
                         else if (TimerD._rx_on_pulse)
                         {
@@ -1367,6 +1368,20 @@ void main(void)
             MaybeOff = 1;
             if (Charge)
             {
+#ifndef NON_RF
+                if (remote_paired)
+                {
+                    TimerD._RF_Active = 1; // Enable RF
+                    if (TimerD._rx_on_pulse)
+                    {
+                        TimerD._rx_on_pulse = 0;
+                        TimerD._prime_rx = 0;
+                        SI241_SetRx();
+                    }
+                    TimerD._rx_on_full = 1;
+                    si24_on_timer = si24_on_timer_val; // 1 Hour
+                }
+#endif
                 if (!WL_hold && !BOOT_hold && !BRT_hold && !BACK_hold && !FRONT_hold)
                 {
                     ChargeCnt++;
@@ -1956,7 +1971,22 @@ void ServiceKeyPress(void)
                         //#elif NAVLIGHT_VER
                     else
                     {
-                        if (remote_type == 0x11)
+                        if (pending_clr == 0x80)
+                        {
+                            pending_clr = 0;
+                            BOOT_hold_trip = 0;
+                            SI241_ClearRxAddress();
+                            PgmStat = 0;
+                            RX_Channel = 0x40;
+                            remote_paired = 0;
+                            SI241_PwrOff(1);
+                            LEDState[0]._active = 0;
+                            LEDState[1]._active = 0;
+                            LEDState[2]._active = 0;
+                            ForceButton = 0x81;
+                            init_button((uint8_t) 4, (uint8_t) 2);
+                        }
+                        else if (remote_type == 0x11)
                         {
                             DimB._Nav_Dim = 1;
                             DimB_Hold._DimCnt = 3;
@@ -1976,10 +2006,12 @@ void ServiceKeyPress(void)
                             BOOT_hold_trip = 0x80;
                             LEDState[0]._active = 0;
                             LEDState[1]._active = 0;
-                            WL_hold = 0x41;
-                            init_button((uint8_t) 1, (uint8_t) 0);
-                            WL_hold = 0x41;
-                            init_button((uint8_t) 2, (uint8_t) 1);
+                            ForceButton = 0x80;
+                            init_button((uint8_t) 3, (uint8_t) 0);
+                            //                            WL_hold = 0x41;
+                            //                            init_button((uint8_t) 1, (uint8_t) 0);
+                            //                            WL_hold = 0x41;
+                            //                            init_button((uint8_t) 2, (uint8_t) 1);
                             WL_hold = 0;
                             BOOT_hold = 0;
                             BOOT_hold_cnt = 0;
@@ -3175,27 +3207,28 @@ void ServiceCmd(void)
             }
             break;
         }
-            /*
-            #ifdef  NAVLIGHT_VER
-                    case 0x6c:
-                    {
-                        PgmStat = 0x80;
-                        PgmStatCnt = 0;
-                        LEDState[0]._active = 0;
-                        LEDState[1]._active = 0;
-                        if (TimerD._RF_Active)
-                        {
-                            TRISB = 0xf5; // lower outputs except MISO, INT
-                        }
-                        else
-                        {
-                            TRISB = 0xf0; // lower outputs
-                        }
-                        TRISD = 0x00; // all outputs
-                        break;
-                    }
-            #else
-             */
+
+#ifdef  FCC_MODE
+        case 0x6c:
+        {
+            PgmStat = 0x80;
+            PgmStatCnt = 0;
+            LEDState[0]._active = 0;
+            LEDState[1]._active = 0;
+            if (TimerD._RF_Active)
+            {
+                TRISB = 0xf5; // lower outputs except MISO, INT
+            }
+            else
+            {
+                TRISB = 0xf0; // lower outputs
+            }
+            TRISD = 0x00; // all outputs
+            break;
+        }
+#endif
+
+#ifndef NON_RF
         case 0x78:
         {
             PgmStat = 0x80;
@@ -3235,7 +3268,7 @@ void ServiceCmd(void)
             KeyChangeLock = 0x10;
             break;
         }
-            //#endif
+#endif
 
         case 0xf8:
         {
@@ -3474,6 +3507,8 @@ void ServiceCmd(void)
             DimB._IR_Mode = 0;
             DimB._Cust_Mode = 0;
             DimB._SOS_Mode = 0;
+            pending_clr = 0;
+
             if (BOOT_hold_trip == 0x80)
             {
                 BOOT_hold_trip = 0;
@@ -3484,10 +3519,24 @@ void ServiceCmd(void)
             }
             else if ((PgmStat == 0x81) || (PgmStat == 0x80))
             {
+                pending_clr = 0x80;
                 PgmStat = 0;
+                BOOT_hold = 0x80;
+                BOOT_hold_cnt = 0;
                 DimB = DimB_Hold;
                 LEDState[0]._active = 0;
                 LEDState[1]._active = 0;
+                SI241_SetStandby();
+                SI241_PwrOff(0);
+                remote_paired = 0;
+                SI241_LoadRxAddress();
+                TimerD._flags = 0; // init flag
+                if (remote_paired)
+                {
+                    TimerD._RF_Active = 1; // Enable RF
+                }
+                rf_action._pair_mode = 0;
+                rf_action._pair_active = 0;
             }
             else
             {
@@ -3620,9 +3669,22 @@ void ServiceCmd(void)
                         init_button((uint8_t) 9, (uint8_t) 1);
                     }
 #else
-                    LEDState[1]._active = 0; // off everything else if Hillary mode
-                    LEDState[2]._active = 0;
-                    init_button((uint8_t) 3, (uint8_t) 0);
+                    //                    LEDState[1]._active = 0; // off everything else if Hillary mode
+                    //                    LEDState[2]._active = 0;
+                    //                    init_button((uint8_t) 3, (uint8_t) 0);
+                    if (((LEDState[0]._button == 1) && (LEDState[0]._button_press == 1) && LEDState[0]._active) && ((LEDState[1]._button == 2) && (LEDState[1]._button_press == 1) && LEDState[1]._active))
+                    {
+                        clean_up();
+                        LEDState[0]._active = 0;
+                        LEDState[1]._active = 0;
+                    }
+                    else
+                    {
+                        ForceButton = 0x81;
+                        init_button((uint8_t) 1, (uint8_t) 0);
+                        ForceButton = 0x81;
+                        init_button((uint8_t) 2, (uint8_t) 1);
+                    }
 #endif
                 }
                 //#endif
@@ -3861,7 +3923,13 @@ void ServiceCmd(void)
             if (DimB._SOS_Mode)
             {
                 DimB._SOS_Mode = 0;
+                BRT_hold_trip = 0;
+                BRT_hold_cnt = 0;
+                BRT_hold = 0;
+                clean_up();
+                LEDState[0]._active = 0;
                 LEDState[1]._active = 0;
+                init_button((uint8_t) 10, (uint8_t) 2);
             }
             else if (PgmStat != 0x81)
             {

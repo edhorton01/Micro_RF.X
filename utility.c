@@ -319,8 +319,8 @@ void TMR0_ISR(void)
             }
             else
             {
-                SI241_ClearRx();
-                RC2_SetLow();
+                //                SI241_ClearRx();
+                //                RC2_SetLow();
             }
         }
     }
@@ -400,7 +400,7 @@ void TMR1_ISR(void)
             {
                 TRISD = TRISD & ~BLINKState._bitmap;
             }
-#else            
+#else
             TRISD = TRISD & ~BLINKState._bitmap;
 #endif
             break;

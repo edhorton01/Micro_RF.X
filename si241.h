@@ -59,6 +59,7 @@ void SI241_SaveRxAddress(void);
 void SI241_SetuptxResp(void);
 void SI241_SetTxResp(void);
 void SI241_ClearRxFifo(void);
+void SI241_ClearRxAddress(void);
 
 uint8_t SI241_Status(void);
 uint8_t SI241_RX0_BC(void);
